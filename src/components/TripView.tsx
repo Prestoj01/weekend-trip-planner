@@ -1,0 +1,232 @@
+import { useCallback, useMemo, useState } from 'react';
+import { useForecast, useTempUnit } from '../hooks';
+import { addDays, daysUntil, eachDay, formatRange, MAX_TRIP_DAYS } from '../lib/dates';
+import { newId } from '../lib/storage';
+import { rescheduleTrip } from '../lib/trip';
+import { placeLabel } from '../lib/labels';
+import { describeWeather, formatTemp } from '../lib/weather';
+import type { Activity, Suggestion, Trip } from '../types';
+import { Budget } from './Budget';
+import { Itinerary } from './Itinerary';
+import { Packing } from './Packing';
+import { Suggestions } from './Suggestions';
+import { TripMap } from './TripMap';
+
+interface Props {
+  trip: Trip;
+  /** Omit for a read-only view (e.g. a shared link). */
+  onChange?: (trip: Trip) => void;
+  actions?: React.ReactNode;
+}
+
+export function TripView({ trip, onChange, actions }: Props) {
+  const days = useMemo(() => eachDay(trip.startDate, trip.endDate), [trip.startDate, trip.endDate]);
+  const forecastState = useForecast(trip.destination.lat, trip.destination.lon);
+  const forecast = forecastState.status === 'ready' ? forecastState.days.filter((d) => days.includes(d.date)) : [];
+  const [unit, setUnit] = useTempUnit();
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [focus, setFocus] = useState<{ lat: number; lon: number; key: number } | null>(null);
+  const [targetDay, setTargetDay] = useState(days[0]);
+  const [editingDates, setEditingDates] = useState(false);
+
+  const update = (patch: Partial<Trip>) => onChange?.({ ...trip, ...patch });
+  const focusOn = useCallback((lat: number, lon: number) => {
+    setFocus({ lat, lon, key: Date.now() });
+    document.querySelector('.map-wrap')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, []);
+
+  const addSuggestion = (s: Suggestion) => {
+    const day = days.includes(targetDay) ? targetDay : days[0];
+    const activity: Activity = {
+      id: newId(),
+      date: day,
+      title: s.name,
+      category: s.category,
+      location: { lat: s.lat, lon: s.lon },
+    };
+    update({ activities: [...trip.activities, activity] });
+  };
+
+  const addedTitles = useMemo(() => new Set(trip.activities.map((a) => a.title.toLowerCase())), [trip.activities]);
+  const until = daysUntil(trip.startDate);
+
+  return (
+    <main className="trip">
+      <header className="trip-head">
+        <div className="trip-title">
+          {onChange ? (
+            <input
+              className="title-input"
+              aria-label="Trip name"
+              value={trip.name}
+              maxLength={60}
+              onChange={(e) => update({ name: e.target.value })}
+              onBlur={(e) => !e.target.value.trim() && update({ name: `Weekend in ${trip.destination.name}` })}
+            />
+          ) : (
+            <h1>{trip.name}</h1>
+          )}
+          <p className="trip-meta">
+            <span>📍 {placeLabel(trip.destination)}</span>
+            {editingDates && onChange ? (
+              <DateEditor trip={trip} onDone={() => setEditingDates(false)} onChange={onChange} />
+            ) : (
+              <span>
+                🗓️ {formatRange(trip.startDate, trip.endDate)}
+                {onChange && (
+                  <button className="link-btn" onClick={() => setEditingDates(true)}>
+                    change
+                  </button>
+                )}
+              </span>
+            )}
+            <span>
+              👥{' '}
+              {onChange ? (
+                <input
+                  className="inline-number"
+                  type="number"
+                  aria-label="Travelers"
+                  min={1}
+                  max={20}
+                  value={trip.travelers}
+                  onChange={(e) => update({ travelers: Math.max(1, Math.min(20, Number(e.target.value) || 1)) })}
+                />
+              ) : (
+                trip.travelers
+              )}{' '}
+              {trip.travelers === 1 ? 'traveler' : 'travelers'}
+            </span>
+            {until > 0 && <span className="badge">{until === 1 ? 'Tomorrow!' : `${until} days to go`}</span>}
+          </p>
+        </div>
+        {actions && <div className="trip-actions">{actions}</div>}
+      </header>
+
+      <section className="card weather" aria-live="polite">
+        <header className="section-head">
+          <h2>Forecast</h2>
+          <div className="unit-toggle" role="group" aria-label="Temperature unit">
+            {(['F', 'C'] as const).map((u) => (
+              <button key={u} aria-pressed={unit === u} className={unit === u ? 'active' : ''} onClick={() => setUnit(u)}>
+                °{u}
+              </button>
+            ))}
+          </div>
+        </header>
+        {forecastState.status === 'loading' && <p className="muted">Loading forecast…</p>}
+        {forecastState.status === 'error' && <p className="muted">Forecast unavailable right now.</p>}
+        {forecastState.status === 'ready' && forecast.length === 0 && (
+          <p className="muted">
+            {until > 15
+              ? `Forecasts are available up to 16 days out — check back in ${until - 15} days.`
+              : 'No forecast available for these dates.'}
+          </p>
+        )}
+        {forecast.length > 0 && (
+          <ul className="forecast">
+            {forecast.map((d) => {
+              const { icon, label } = describeWeather(d.code);
+              return (
+                <li key={d.date}>
+                  <span className="muted">
+                    {new Date(d.date + 'T12:00').toLocaleDateString(undefined, { weekday: 'short' })}
+                  </span>
+                  <span className="wx-icon" aria-hidden>
+                    {icon}
+                  </span>
+                  <span className="wx-label">{label}</span>
+                  <span>
+                    <strong>{formatTemp(d.maxC, unit)}</strong> <span className="muted">{formatTemp(d.minC, unit)}</span>
+                  </span>
+                  <span className="muted small">💧 {d.precipChance}%</span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      <div className="trip-grid-layout">
+        <div className="col-main">
+          <h2 className="col-title">Itinerary</h2>
+          <Itinerary
+            days={days}
+            activities={trip.activities}
+            forecast={forecast}
+            unit={unit}
+            onChange={onChange && ((activities) => update({ activities }))}
+            onFocus={(a) => a.location && focusOn(a.location.lat, a.location.lon)}
+          />
+        </div>
+        <aside className="col-side">
+          <TripMap
+            destination={trip.destination}
+            days={days}
+            activities={trip.activities}
+            suggestions={onChange ? suggestions : []}
+            focus={focus}
+            onAddSuggestion={onChange && addSuggestion}
+          />
+          {onChange && (
+            <Suggestions
+              destination={trip.destination}
+              days={days}
+              addedTitles={addedTitles}
+              targetDay={days.includes(targetDay) ? targetDay : days[0]}
+              onTargetDayChange={setTargetDay}
+              onAdd={addSuggestion}
+              onLoaded={setSuggestions}
+              onFocus={(s) => focusOn(s.lat, s.lon)}
+            />
+          )}
+        </aside>
+      </div>
+
+      <div className="two-up">
+        <Packing items={trip.packing} forecast={forecast} onChange={onChange && ((packing) => update({ packing }))} />
+        <Budget trip={trip} />
+      </div>
+    </main>
+  );
+}
+
+function DateEditor({ trip, onChange, onDone }: { trip: Trip; onChange: (t: Trip) => void; onDone: () => void }) {
+  const [start, setStart] = useState(trip.startDate);
+  const [end, setEnd] = useState(trip.endDate);
+  const length = eachDay(start, end).length;
+  const valid = start && end && end >= start && length <= MAX_TRIP_DAYS;
+
+  return (
+    <form
+      className="date-editor"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (!valid) return;
+        onChange(rescheduleTrip(trip, start, end));
+        onDone();
+      }}
+    >
+      <input
+        type="date"
+        aria-label="Start date"
+        value={start}
+        onChange={(e) => {
+          const v = e.target.value;
+          setStart(v);
+          // Keep the same trip length when moving the start date.
+          if (v) setEnd(addDays(v, eachDay(trip.startDate, trip.endDate).length - 1));
+        }}
+      />
+      <span>→</span>
+      <input type="date" aria-label="End date" min={start} value={end} onChange={(e) => setEnd(e.target.value)} />
+      <button className="btn primary small" disabled={!valid}>
+        Save
+      </button>
+      <button type="button" className="btn ghost small" onClick={onDone}>
+        Cancel
+      </button>
+      {!valid && <span className="field-error">Up to {MAX_TRIP_DAYS} days</span>}
+    </form>
+  );
+}
