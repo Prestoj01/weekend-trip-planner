@@ -30,6 +30,7 @@ export function TripView({ trip, onChange, actions }: Props) {
   const [focus, setFocus] = useState<{ lat: number; lon: number; key: number } | null>(null);
   const [targetDay, setTargetDay] = useState(days[0]);
   const [editingDates, setEditingDates] = useState(false);
+  const [highlightId, setHighlightId] = useState<string | null>(null);
 
   const update = (patch: Partial<Trip>) => onChange?.({ ...trip, ...patch });
   const focusOn = useCallback((lat: number, lon: number) => {
@@ -47,6 +48,7 @@ export function TripView({ trip, onChange, actions }: Props) {
       location: { lat: s.lat, lon: s.lon },
     };
     update({ activities: [...trip.activities, activity] });
+    setHighlightId(activity.id);
   };
 
   const addedTitles = useMemo(() => new Set(trip.activities.map((a) => a.title.toLowerCase())), [trip.activities]);
@@ -119,7 +121,13 @@ export function TripView({ trip, onChange, actions }: Props) {
             ))}
           </div>
         </header>
-        {forecastState.status === 'loading' && <p className="muted">Loading forecast…</p>}
+        {forecastState.status === 'loading' && (
+          <ul className="forecast" aria-label="Loading forecast">
+            {days.map((d) => (
+              <li key={d} className="skeleton forecast-skeleton" />
+            ))}
+          </ul>
+        )}
         {forecastState.status === 'error' && <p className="muted">Forecast unavailable right now.</p>}
         {forecastState.status === 'ready' && forecast.length === 0 && (
           <p className="muted">
@@ -156,6 +164,7 @@ export function TripView({ trip, onChange, actions }: Props) {
       <div className="trip-grid-layout">
         <div className="col-main">
           <Itinerary
+            highlightId={highlightId}
             days={days}
             activities={trip.activities}
             forecast={forecast}

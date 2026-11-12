@@ -17,19 +17,25 @@ interface Props {
   onChange?: (activities: Activity[]) => void;
   /** Omit to render map pins as static labels (e.g. in a preview). */
   onFocus?: (a: Activity) => void;
+  /** An activity added elsewhere (e.g. from suggestions) to flash once. */
+  highlightId?: string | null;
 }
 
 type Editing = { mode: 'new'; date: string } | { mode: 'edit'; id: string } | null;
 
-export function Itinerary({ days, activities, forecast, unit, onChange, onFocus }: Props) {
+export function Itinerary({ days, activities, forecast, unit, onChange, onFocus, highlightId }: Props) {
   const [editing, setEditing] = useState<Editing>(null);
+  const [touchedId, setTouchedId] = useState<string | null>(null);
 
   const add = (a: Omit<Activity, 'id'>) => {
-    onChange?.([...activities, { ...a, id: newId() }]);
+    const id = newId();
+    onChange?.([...activities, { ...a, id }]);
+    setTouchedId(id);
     setEditing(null);
   };
   const save = (id: string, a: Omit<Activity, 'id'>) => {
     onChange?.(activities.map((x) => (x.id === id ? { ...a, id } : x)));
+    setTouchedId(id);
     setEditing(null);
   };
   const remove = (id: string) => {
@@ -83,7 +89,10 @@ export function Itinerary({ days, activities, forecast, unit, onChange, onFocus 
                   );
                 }
                 return (
-                  <li key={a.id} className="activity">
+                  <li
+                    key={a.id}
+                    className={a.id === touchedId || a.id === highlightId ? 'activity just-changed' : 'activity'}
+                  >
                     <span className="activity-time">{a.time && formatTime(a.time)}</span>
                     <div className="activity-body">
                       <div className="activity-title">

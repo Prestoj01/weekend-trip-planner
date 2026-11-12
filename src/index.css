@@ -721,6 +721,10 @@ main {
   width: 100%;
   z-index: 0;
 }
+/* Placeholder colour while tiles load, instead of Leaflet's flat grey. */
+.map.leaflet-container {
+  background: var(--bg);
+}
 .map-pin {
   display: grid;
   place-items: center;
@@ -941,6 +945,9 @@ main {
   height: 1.05rem;
   accent-color: var(--brand);
 }
+.checklist label {
+  transition: color 0.2s;
+}
 .checklist li.done label {
   color: var(--muted);
   text-decoration: line-through;
@@ -1027,6 +1034,42 @@ main {
 .toast.show {
   transform: translate(-50%, 0);
   opacity: 1;
+}
+
+/* ---------- Feedback ---------- */
+.forecast-skeleton {
+  height: 9.5rem;
+  margin: 0;
+}
+/* Briefly highlight an activity that was just added or edited, so it's easy to find. */
+.just-changed {
+  animation: flash 1.4s ease-out;
+  border-radius: var(--radius-sm);
+}
+@keyframes flash {
+  0% {
+    background: color-mix(in srgb, var(--day-color, var(--brand)) 22%, transparent);
+    transform: translateY(-4px);
+  }
+  20% {
+    transform: none;
+  }
+  100% {
+    background: transparent;
+  }
+}
+.btn.added:disabled {
+  opacity: 1;
+  cursor: default;
+}
+.added {
+  color: var(--brand);
+  animation: pop 0.25s ease-out;
+}
+@keyframes pop {
+  50% {
+    transform: scale(1.08);
+  }
 }
 
 /* ---------- Responsive ---------- */

@@ -120,7 +120,7 @@ export function Suggestions({ destination, days, addedTitles, targetDay, onTarge
                     </span>
                   </button>
                   <button
-                    className="btn ghost small"
+                    className={added ? 'btn ghost small added' : 'btn ghost small'}
                     disabled={added}
                     onClick={() => onAdd(s)}
                     aria-label={added ? `${s.name} added` : `Add ${s.name}`}

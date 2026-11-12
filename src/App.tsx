@@ -35,6 +35,7 @@ export default function App() {
             onDelete={() => {
               remove(trip.id);
               navigate('/');
+              setToast('Trip deleted');
             }}
           />
         }
@@ -124,7 +125,10 @@ function TripActions({ trip, onToast, onDelete }: { trip: Trip; onToast: (m: str
       </button>
       <button
         className="btn ghost small"
-        onClick={() => downloadFile(`${slug}.ics`, buildIcs(trip), 'text/calendar')}
+        onClick={() => {
+          downloadFile(`${slug}.ics`, buildIcs(trip), 'text/calendar');
+          onToast('Calendar file downloaded');
+        }}
         title="Download a calendar file for Google, Apple or Outlook Calendar"
       >
         Add to calendar
