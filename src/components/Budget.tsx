@@ -9,7 +9,7 @@ export function Budget({ trip }: { trip: Trip }) {
   return (
     <section className="card budget">
       <header className="section-head">
-        <h2>Budget</h2>
+        <h2>What it'll cost</h2>
       </header>
       <div className="budget-totals">
         <div>

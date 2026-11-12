@@ -26,7 +26,7 @@ export function Packing({ items, forecast, onChange }: Props) {
   return (
     <section className="card packing">
       <header className="section-head">
-        <h2>Packing list</h2>
+        <h2>What to pack</h2>
         <span className="muted">
           {packed}/{items.length} packed
         </span>

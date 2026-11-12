@@ -57,16 +57,16 @@ export function Home({ trips, onCreate, onDelete }: Props) {
     <main className="home">
       <section className="hero">
         <h1>
-          Plan the perfect <span className="accent">weekend away</span>
+          Your next weekend trip, <span className="accent">planned on one page</span>
         </h1>
         <p className="lede">
-          Pick a destination, check the forecast, find things to do nearby, and build a day-by-day itinerary — then share
-          it with your crew. Free, no sign-up.
+          The forecast, things to do nearby, and a day-by-day plan on a map — plus a packing list and budget. Share it
+          with one link. Free, no sign-up.
         </p>
       </section>
 
       <form className="card new-trip" onSubmit={create}>
-        <h2>Start a new trip</h2>
+        <h2 className="num">Plan a trip for {formatRange(start, end > start ? end : start)}</h2>
         <div className="field">
           <label htmlFor="destination">Where to?</label>
           <PlaceSearch id="destination" value={place} onChange={setPlace} />
@@ -117,12 +117,11 @@ export function Home({ trips, onCreate, onDelete }: Props) {
         </div>
         {tooLong && <p className="field-error">Weekend trips max out at {MAX_TRIP_DAYS} days.</p>}
         <div className="actions">
-          <button type="submit" className="btn primary" disabled={!place || tooLong || inverted}>
-            Create trip
+          <button type="submit" className="btn primary large" disabled={!place || tooLong || inverted}>
+            Start planning
           </button>
-          <span className="muted">or</span>
-          <button type="button" className="btn ghost" onClick={openSample}>
-            Explore a sample trip
+          <button type="button" className="link-btn" onClick={openSample}>
+            or explore a sample trip
           </button>
         </div>
       </form>

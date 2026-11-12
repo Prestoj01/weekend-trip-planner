@@ -52,7 +52,7 @@ export function Suggestions({ destination, days, addedTitles, targetDay, onTarge
   return (
     <section className="card suggestions">
       <header className="section-head">
-        <h2>Things to do nearby</h2>
+        <h2>Things to do near {destination.name}</h2>
         <label className="inline-select">
           Add to
           <select value={targetDay} onChange={(e) => onTargetDayChange(e.target.value)}>

@@ -142,7 +142,7 @@ function TripActions({ trip, onToast, onDelete }: { trip: Trip; onToast: (m: str
 function NotFound({ message }: { message: string }) {
   return (
     <main className="not-found card">
-      <h1>Hmm.</h1>
+      <h1>Trip not found</h1>
       <p>{message}</p>
       <a href="#/" className="btn primary">
         Back to my trips

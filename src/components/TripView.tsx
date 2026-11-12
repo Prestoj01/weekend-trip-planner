@@ -110,7 +110,7 @@ export function TripView({ trip, onChange, actions }: Props) {
 
       <section className="card weather" aria-live="polite">
         <header className="section-head">
-          <h2>Forecast</h2>
+          <h2>Weather in {trip.destination.name}</h2>
           <div className="unit-toggle" role="group" aria-label="Temperature unit">
             {(['F', 'C'] as const).map((u) => (
               <button key={u} aria-pressed={unit === u} className={unit === u ? 'active' : ''} onClick={() => setUnit(u)}>
