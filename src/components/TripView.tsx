@@ -5,12 +5,14 @@ import { newId } from '../lib/storage';
 import { rescheduleTrip } from '../lib/trip';
 import { placeLabel } from '../lib/labels';
 import { describeWeather, formatTemp } from '../lib/weather';
+import { CalendarDays, Droplets, MapPin, Users } from 'lucide-react';
 import type { Activity, Suggestion, Trip } from '../types';
 import { Budget } from './Budget';
 import { Itinerary } from './Itinerary';
 import { Packing } from './Packing';
 import { Suggestions } from './Suggestions';
 import { TripMap } from './TripMap';
+import { ICON_STROKE, WeatherIcon } from './icons';
 
 interface Props {
   trip: Trip;
@@ -67,12 +69,16 @@ export function TripView({ trip, onChange, actions }: Props) {
             <h1>{trip.name}</h1>
           )}
           <p className="trip-meta">
-            <span>📍 {placeLabel(trip.destination)}</span>
+            <span className="with-icon">
+              <MapPin size={16} strokeWidth={ICON_STROKE} aria-hidden />
+              {placeLabel(trip.destination)}
+            </span>
             {editingDates && onChange ? (
               <DateEditor trip={trip} onDone={() => setEditingDates(false)} onChange={onChange} />
             ) : (
-              <span>
-                🗓️ {formatRange(trip.startDate, trip.endDate)}
+              <span className="with-icon">
+                <CalendarDays size={16} strokeWidth={ICON_STROKE} aria-hidden />
+                {formatRange(trip.startDate, trip.endDate)}
                 {onChange && (
                   <button className="link-btn" onClick={() => setEditingDates(true)}>
                     change
@@ -80,8 +86,8 @@ export function TripView({ trip, onChange, actions }: Props) {
                 )}
               </span>
             )}
-            <span>
-              👥{' '}
+            <span className="with-icon">
+              <Users size={16} strokeWidth={ICON_STROKE} aria-hidden />
               {onChange ? (
                 <input
                   className="inline-number"
@@ -126,20 +132,21 @@ export function TripView({ trip, onChange, actions }: Props) {
         {forecast.length > 0 && (
           <ul className="forecast">
             {forecast.map((d) => {
-              const { icon, label } = describeWeather(d.code);
+              const { kind, label } = describeWeather(d.code);
               return (
                 <li key={d.date}>
                   <span className="muted">
                     {new Date(d.date + 'T12:00').toLocaleDateString(undefined, { weekday: 'short' })}
                   </span>
-                  <span className="wx-icon" aria-hidden>
-                    {icon}
-                  </span>
+                  <WeatherIcon kind={kind} size={32} className="wx-icon" />
                   <span className="wx-label">{label}</span>
                   <span>
                     <strong>{formatTemp(d.maxC, unit)}</strong> <span className="muted">{formatTemp(d.minC, unit)}</span>
                   </span>
-                  <span className="muted small">💧 {d.precipChance}%</span>
+                  <span className="muted small with-icon">
+                    <Droplets size={13} strokeWidth={ICON_STROKE} aria-label="Chance of rain" />
+                    {d.precipChance}%
+                  </span>
                 </li>
               );
             })}

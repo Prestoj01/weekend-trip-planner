@@ -5,7 +5,7 @@ import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
 import { formatTime } from '../lib/dates';
 import { DAY_COLORS, sortActivities } from '../lib/trip';
 import type { Activity, Place, Suggestion } from '../types';
-import { CATEGORY_META } from '../lib/labels';
+import { CategoryIcon } from './icons';
 
 interface Props {
   destination: Place;
@@ -28,9 +28,9 @@ const pinIcon = (color: string, label: string) =>
 const dotIcon = L.divIcon({ className: '', html: '<span class="map-dot"></span>', iconSize: [14, 14] });
 const homeIcon = L.divIcon({
   className: '',
-  html: '<span class="map-home">★</span>',
-  iconSize: [26, 26],
-  iconAnchor: [13, 13],
+  html: '<span class="map-home"></span>',
+  iconSize: [18, 18],
+  iconAnchor: [9, 9],
 });
 
 function FitBounds({ points }: { points: [number, number][] }) {
@@ -100,8 +100,8 @@ export function TripMap({ destination, days, activities, suggestions, focus, onA
         {pins.map(({ a, color, label }) => (
           <Marker key={a.id} position={[a.location!.lat, a.location!.lon]} icon={pinIcon(color, label)} title={a.title}>
             <Popup>
-              <strong>
-                {CATEGORY_META[a.category].icon} {a.title}
+              <strong className="popup-title">
+                <CategoryIcon category={a.category} size={14} /> {a.title}
               </strong>
               {a.time && (
                 <>

@@ -4,8 +4,10 @@ import { newId } from '../lib/storage';
 import { DAY_COLORS, formatMoney, sortActivities } from '../lib/trip';
 import { describeWeather, formatTemp } from '../lib/weather';
 import type { Activity, DailyWeather, TempUnit } from '../types';
-import { CATEGORY_META } from '../lib/labels';
+import { Pencil } from 'lucide-react';
+import { CATEGORY_LABELS } from '../lib/labels';
 import { ActivityForm } from './ActivityForm';
+import { CategoryIcon, ICON_STROKE, WeatherIcon } from './icons';
 
 interface Props {
   days: string[];
@@ -52,7 +54,7 @@ export function Itinerary({ days, activities, forecast, unit, onChange, onFocus 
               </div>
               {wx && (
                 <div className="day-wx" title={describeWeather(wx.code).label}>
-                  <span aria-hidden>{describeWeather(wx.code).icon}</span>
+                  <WeatherIcon kind={describeWeather(wx.code).kind} size={18} />
                   <span>
                     {formatTemp(wx.maxC, unit)} / <span className="muted">{formatTemp(wx.minC, unit)}</span>
                   </span>
@@ -84,7 +86,7 @@ export function Itinerary({ days, activities, forecast, unit, onChange, onFocus 
                     <span className="activity-time">{a.time ? formatTime(a.time) : 'Anytime'}</span>
                     <div className="activity-body">
                       <div className="activity-title">
-                        <span aria-hidden>{CATEGORY_META[a.category].icon}</span>
+                        <CategoryIcon category={a.category} className="cat-icon" aria-label={CATEGORY_LABELS[a.category]} />
                         <strong>{a.title}</strong>
                         {a.location && (
                           <button
@@ -107,7 +109,7 @@ export function Itinerary({ days, activities, forecast, unit, onChange, onFocus 
                         aria-label={`Edit ${a.title}`}
                         title="Edit"
                       >
-                        ✎
+                        <Pencil size={15} strokeWidth={ICON_STROKE} aria-hidden />
                       </button>
                     )}
                   </li>

@@ -4,7 +4,9 @@ import { addDays, daysUntil, eachDay, formatRange, MAX_TRIP_DAYS, nextWeekend } 
 import { defaultPacking } from '../lib/packing';
 import { sampleTrip } from '../lib/sample';
 import { newId } from '../lib/storage';
+import { MapPin, X } from 'lucide-react';
 import type { Place, Trip } from '../types';
+import { ICON_STROKE } from './icons';
 import { PlaceSearch } from './PlaceSearch';
 
 interface Props {
@@ -138,7 +140,9 @@ export function Home({ trips, onCreate, onDelete }: Props) {
                   <a href={`#/trip/${t.id}`} className="trip-card-link">
                     <span className={`badge ${badge === 'past' ? 'muted' : ''}`}>{badge}</span>
                     <h3>{t.name}</h3>
-                    <p>📍 {t.destination.name}</p>
+                    <p className="with-icon">
+                      <MapPin size={15} strokeWidth={ICON_STROKE} aria-hidden /> {t.destination.name}
+                    </p>
                     <p className="muted">{formatRange(t.startDate, t.endDate)}</p>
                     <p className="muted">
                       {t.activities.length} {t.activities.length === 1 ? 'activity' : 'activities'}
@@ -150,7 +154,7 @@ export function Home({ trips, onCreate, onDelete }: Props) {
                     title="Delete trip"
                     onClick={() => confirm(`Delete "${t.name}"?`) && onDelete(t.id)}
                   >
-                    ✕
+                    <X size={16} strokeWidth={ICON_STROKE} aria-hidden />
                   </button>
                 </li>
               );

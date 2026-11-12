@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { formatDay } from '../lib/dates';
-import { CATEGORY_META } from '../lib/labels';
+import { CATEGORY_LABELS } from '../lib/labels';
 import type { Activity, ActivityCategory } from '../types';
 
 interface Props {
@@ -62,9 +62,9 @@ export function ActivityForm({ initial, date, days, onSave, onCancel, onDelete }
           />
         </div>
         <select aria-label="Category" value={category} onChange={(e) => setCategory(e.target.value as ActivityCategory)}>
-          {Object.entries(CATEGORY_META).map(([k, m]) => (
+          {Object.entries(CATEGORY_LABELS).map(([k, label]) => (
             <option key={k} value={k}>
-              {m.icon} {m.label}
+              {label}
             </option>
           ))}
         </select>

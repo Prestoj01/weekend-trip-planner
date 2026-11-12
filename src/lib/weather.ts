@@ -1,40 +1,52 @@
 import type { TempUnit } from '../types';
 
+export type WeatherKind =
+  | 'clear'
+  | 'mostly-clear'
+  | 'partly-cloudy'
+  | 'overcast'
+  | 'fog'
+  | 'drizzle'
+  | 'rain'
+  | 'snow'
+  | 'storm'
+  | 'unknown';
+
 /** WMO weather interpretation codes, as returned by Open-Meteo. */
-const CODES: Record<number, [icon: string, label: string]> = {
-  0: ['☀️', 'Clear'],
-  1: ['🌤️', 'Mostly clear'],
-  2: ['⛅', 'Partly cloudy'],
-  3: ['☁️', 'Overcast'],
-  45: ['🌫️', 'Fog'],
-  48: ['🌫️', 'Freezing fog'],
-  51: ['🌦️', 'Light drizzle'],
-  53: ['🌦️', 'Drizzle'],
-  55: ['🌧️', 'Heavy drizzle'],
-  56: ['🌧️', 'Freezing drizzle'],
-  57: ['🌧️', 'Freezing drizzle'],
-  61: ['🌦️', 'Light rain'],
-  63: ['🌧️', 'Rain'],
-  65: ['🌧️', 'Heavy rain'],
-  66: ['🌧️', 'Freezing rain'],
-  67: ['🌧️', 'Freezing rain'],
-  71: ['🌨️', 'Light snow'],
-  73: ['🌨️', 'Snow'],
-  75: ['❄️', 'Heavy snow'],
-  77: ['🌨️', 'Snow grains'],
-  80: ['🌦️', 'Showers'],
-  81: ['🌧️', 'Showers'],
-  82: ['⛈️', 'Violent showers'],
-  85: ['🌨️', 'Snow showers'],
-  86: ['❄️', 'Snow showers'],
-  95: ['⛈️', 'Thunderstorm'],
-  96: ['⛈️', 'Thunderstorm, hail'],
-  99: ['⛈️', 'Thunderstorm, hail'],
+const CODES: Record<number, [kind: WeatherKind, label: string]> = {
+  0: ['clear', 'Clear'],
+  1: ['mostly-clear', 'Mostly clear'],
+  2: ['partly-cloudy', 'Partly cloudy'],
+  3: ['overcast', 'Overcast'],
+  45: ['fog', 'Fog'],
+  48: ['fog', 'Freezing fog'],
+  51: ['drizzle', 'Light drizzle'],
+  53: ['drizzle', 'Drizzle'],
+  55: ['rain', 'Heavy drizzle'],
+  56: ['rain', 'Freezing drizzle'],
+  57: ['rain', 'Freezing drizzle'],
+  61: ['drizzle', 'Light rain'],
+  63: ['rain', 'Rain'],
+  65: ['rain', 'Heavy rain'],
+  66: ['rain', 'Freezing rain'],
+  67: ['rain', 'Freezing rain'],
+  71: ['snow', 'Light snow'],
+  73: ['snow', 'Snow'],
+  75: ['snow', 'Heavy snow'],
+  77: ['snow', 'Snow grains'],
+  80: ['drizzle', 'Showers'],
+  81: ['rain', 'Showers'],
+  82: ['storm', 'Violent showers'],
+  85: ['snow', 'Snow showers'],
+  86: ['snow', 'Snow showers'],
+  95: ['storm', 'Thunderstorm'],
+  96: ['storm', 'Thunderstorm, hail'],
+  99: ['storm', 'Thunderstorm, hail'],
 };
 
-export function describeWeather(code: number): { icon: string; label: string } {
-  const [icon, label] = CODES[code] ?? ['🌡️', 'Unknown'];
-  return { icon, label };
+export function describeWeather(code: number): { kind: WeatherKind; label: string } {
+  const [kind, label] = CODES[code] ?? ['unknown', 'Unknown'];
+  return { kind, label };
 }
 
 export const isRainy = (code: number) => (code >= 51 && code <= 67) || (code >= 80 && code <= 82) || code >= 95;

@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { weatherSuggestions } from '../lib/packing';
 import { newId } from '../lib/storage';
+import { X } from 'lucide-react';
 import type { DailyWeather, PackingItem } from '../types';
+import { ICON_STROKE } from './icons';
 
 interface Props {
   items: PackingItem[];
@@ -62,7 +64,7 @@ export function Packing({ items, forecast, onChange }: Props) {
                 aria-label={`Remove ${item.label}`}
                 onClick={() => onChange(items.filter((i) => i.id !== item.id))}
               >
-                ✕
+                <X size={15} strokeWidth={ICON_STROKE} aria-hidden />
               </button>
             )}
           </li>

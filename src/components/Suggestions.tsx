@@ -2,13 +2,15 @@ import { useEffect, useState } from 'react';
 import { fetchSuggestions } from '../lib/api';
 import { formatDay } from '../lib/dates';
 import { formatDistance } from '../lib/geo';
+import { Check, Plus, Star } from 'lucide-react';
 import type { Place, Suggestion } from '../types';
+import { CategoryIcon, ICON_STROKE } from './icons';
 
 type Category = 'sight' | 'outdoors' | 'food';
 const TABS: { id: Category; label: string }[] = [
-  { id: 'sight', label: '🏛️ Sights' },
-  { id: 'outdoors', label: '🌲 Outdoors' },
-  { id: 'food', label: '🍽️ Food & drink' },
+  { id: 'sight', label: 'Sights' },
+  { id: 'outdoors', label: 'Outdoors' },
+  { id: 'food', label: 'Food & drink' },
 ];
 
 type Load = { status: 'loading' } | { status: 'error' } | { status: 'ready'; items: Suggestion[] };
@@ -71,6 +73,7 @@ export function Suggestions({ destination, days, addedTitles, targetDay, onTarge
             className={tab === t.id ? 'tab active' : 'tab'}
             onClick={() => setTab(t.id)}
           >
+            <CategoryIcon category={t.id} size={15} />
             {t.label}
           </button>
         ))}
@@ -109,10 +112,7 @@ export function Suggestions({ destination, days, addedTitles, targetDay, onTarge
                     <strong>
                       {s.name}
                       {s.notable && (
-                        <span className="star" title="Notable place" aria-label="Notable">
-                          {' '}
-                          ★
-                        </span>
+                        <Star size={13} strokeWidth={ICON_STROKE} className="star" aria-label="Notable place" />
                       )}
                     </strong>
                     <span className="muted">
@@ -125,7 +125,8 @@ export function Suggestions({ destination, days, addedTitles, targetDay, onTarge
                     onClick={() => onAdd(s)}
                     aria-label={added ? `${s.name} added` : `Add ${s.name}`}
                   >
-                    {added ? '✓ Added' : '+ Add'}
+                    {added ? <Check size={15} strokeWidth={ICON_STROKE} aria-hidden /> : <Plus size={15} strokeWidth={ICON_STROKE} aria-hidden />}
+                    {added ? 'Added' : 'Add'}
                   </button>
                 </li>
               );
