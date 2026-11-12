@@ -15,7 +15,8 @@ interface Props {
   forecast: DailyWeather[];
   unit: TempUnit;
   onChange?: (activities: Activity[]) => void;
-  onFocus: (a: Activity) => void;
+  /** Omit to render map pins as static labels (e.g. in a preview). */
+  onFocus?: (a: Activity) => void;
 }
 
 type Editing = { mode: 'new'; date: string } | { mode: 'edit'; id: string } | null;
@@ -88,7 +89,8 @@ export function Itinerary({ days, activities, forecast, unit, onChange, onFocus 
                       <div className="activity-title">
                         <CategoryIcon category={a.category} className="cat-icon" aria-label={CATEGORY_LABELS[a.category]} />
                         <strong>{a.title}</strong>
-                        {a.location && (
+                        {a.location && !onFocus && <span className="pin">{pin}</span>}
+                        {a.location && onFocus && (
                           <button
                             className="pin"
                             onClick={() => onFocus(a)}
