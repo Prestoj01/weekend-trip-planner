@@ -103,7 +103,6 @@ export function TripView({ trip, onChange, actions }: Props) {
               )}{' '}
               {trip.travelers === 1 ? 'traveler' : 'travelers'}
             </span>
-            {until > 0 && <span className="badge">{until === 1 ? 'Tomorrow!' : `${until} days to go`}</span>}
           </p>
         </div>
         {actions && <div className="trip-actions">{actions}</div>}
@@ -156,7 +155,6 @@ export function TripView({ trip, onChange, actions }: Props) {
 
       <div className="trip-grid-layout">
         <div className="col-main">
-          <h2 className="col-title">Itinerary</h2>
           <Itinerary
             days={days}
             activities={trip.activities}

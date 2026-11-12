@@ -83,7 +83,7 @@ export function Itinerary({ days, activities, forecast, unit, onChange, onFocus 
                 }
                 return (
                   <li key={a.id} className="activity">
-                    <span className="activity-time">{a.time ? formatTime(a.time) : 'Anytime'}</span>
+                    <span className="activity-time">{a.time && formatTime(a.time)}</span>
                     <div className="activity-body">
                       <div className="activity-title">
                         <CategoryIcon category={a.category} className="cat-icon" aria-label={CATEGORY_LABELS[a.category]} />

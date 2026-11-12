@@ -132,20 +132,17 @@ export function Home({ trips, onCreate, onDelete }: Props) {
           <h2>Your trips</h2>
           <ul className="trip-grid">
             {sorted.map((t) => {
-              const until = daysUntil(t.startDate);
-              const badge =
-                until > 1 ? `in ${until} days` : until === 1 ? 'tomorrow' : daysUntil(t.endDate) >= 0 ? 'now' : 'past';
+              const past = daysUntil(t.endDate) < 0;
               return (
-                <li key={t.id} className="card trip-card">
+                <li key={t.id} className={`card trip-card${past ? ' past' : ''}`}>
                   <a href={`#/trip/${t.id}`} className="trip-card-link">
-                    <span className={`badge ${badge === 'past' ? 'muted' : ''}`}>{badge}</span>
                     <h3>{t.name}</h3>
                     <p className="with-icon">
                       <MapPin size={15} strokeWidth={ICON_STROKE} aria-hidden /> {t.destination.name}
                     </p>
-                    <p className="muted">{formatRange(t.startDate, t.endDate)}</p>
-                    <p className="muted">
-                      {t.activities.length} {t.activities.length === 1 ? 'activity' : 'activities'}
+                    <p className="muted num">
+                      {formatRange(t.startDate, t.endDate)} · {t.activities.length}{' '}
+                      {t.activities.length === 1 ? 'plan' : 'plans'}
                     </p>
                   </a>
                   <button
