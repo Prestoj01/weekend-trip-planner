@@ -1,7 +1,7 @@
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { useEffect, useMemo } from 'react';
-import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
+import { Fragment, useEffect, useMemo, useRef } from 'react';
+import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from 'react-leaflet';
 import { formatTime } from '../lib/dates';
 import { DAY_COLORS, sortActivities } from '../lib/trip';
 import type { Activity, Place, Suggestion } from '../types';
@@ -16,14 +16,64 @@ interface Props {
   onAddSuggestion?: (s: Suggestion) => void;
 }
 
-const pinIcon = (color: string, label: string) =>
-  L.divIcon({
-    className: '',
-    html: `<span class="map-pin" style="--pin:${color}"><b>${label}</b></span>`,
-    iconSize: [28, 28],
-    iconAnchor: [14, 28],
-    popupAnchor: [0, -26],
-  });
+// Cache icons so re-renders reuse the same DOM (and the drop-in animation only plays once).
+const pinIcons = new Map<string, L.DivIcon>();
+const pinIcon = (color: string, label: string, delay: number) => {
+  const key = `${color}|${label}|${delay}`;
+  let icon = pinIcons.get(key);
+  if (!icon) {
+    icon = L.divIcon({
+      className: '',
+      html: `<span class="map-pin" style="--pin:${color};animation-delay:${delay}ms"><b>${label}</b></span>`,
+      iconSize: [28, 28],
+      iconAnchor: [14, 28],
+      popupAnchor: [0, -26],
+    });
+    pinIcons.set(key, icon);
+  }
+  return icon;
+};
+
+/** Let CSS animate the draw in 0→1 units regardless of the line's on-screen length. */
+const normalizePathLength = (e: L.LeafletEvent) => (e.target as L.Path).getElement()?.setAttribute('pathLength', '1');
+
+const travellerIcon = (color: string) =>
+  L.divIcon({ className: '', html: `<span class="traveller" style="--pin:${color}"></span>`, iconSize: [16, 16] });
+
+/** A marker that glides along a day's route, pausing at the end before looping. */
+function Traveller({ points, color, delayMs }: { points: [number, number][]; color: string; delayMs: number }) {
+  const ref = useRef<L.Marker>(null);
+  const icon = useMemo(() => travellerIcon(color), [color]);
+
+  useEffect(() => {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const segs = points.slice(1).map((p, i) => Math.hypot(p[0] - points[i][0], p[1] - points[i][1]));
+    const total = segs.reduce((a, b) => a + b, 0);
+    if (total === 0) return;
+    const travelMs = 2500 + points.length * 900;
+    const cycleMs = travelMs + 1500;
+    let frame = 0;
+    const startAt = performance.now() + delayMs;
+
+    const tick = (now: number) => {
+      const t = Math.max(0, now - startAt) % cycleMs;
+      // ease-in-out along the whole route
+      const x = Math.min(1, t / travelMs);
+      const eased = x < 0.5 ? 2 * x * x : 1 - (-2 * x + 2) ** 2 / 2;
+      let dist = eased * total;
+      let i = 0;
+      while (i < segs.length - 1 && dist > segs[i]) dist -= segs[i++];
+      const f = segs[i] === 0 ? 0 : Math.min(1, dist / segs[i]);
+      const [a, b] = [points[i], points[i + 1]];
+      ref.current?.setLatLng([a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f]);
+      frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [points, delayMs]);
+
+  return <Marker ref={ref} position={points[0]} icon={icon} interactive={false} keyboard={false} />;
+}
 
 const dotIcon = L.divIcon({ className: '', html: '<span class="map-dot"></span>', iconSize: [14, 14] });
 const homeIcon = L.divIcon({
@@ -60,8 +110,24 @@ export function TripMap({ destination, days, activities, suggestions, focus, onA
           a,
           color: DAY_COLORS[i % DAY_COLORS.length],
           label: String(n + 1),
+          delay: i * 450 + n * 120,
         })),
       ),
+    [days, activities],
+  );
+
+  const routes = useMemo(
+    () =>
+      days
+        .map((date, i) => ({
+          date,
+          index: i,
+          color: DAY_COLORS[i % DAY_COLORS.length],
+          points: sortActivities(activities.filter((a) => a.date === date && a.location)).map(
+            (a) => [a.location!.lat, a.location!.lon] as [number, number],
+          ),
+        }))
+        .filter((r) => r.points.length >= 2),
     [days, activities],
   );
 
@@ -97,8 +163,40 @@ export function TripMap({ destination, days, activities, suggestions, focus, onA
             </Popup>
           </Marker>
         ))}
-        {pins.map(({ a, color, label }) => (
-          <Marker key={a.id} position={[a.location!.lat, a.location!.lon]} icon={pinIcon(color, label)} title={a.title}>
+        {routes.map((r) => (
+          <Fragment key={`${r.date}:${JSON.stringify(r.points)}`}>
+            <Polyline
+              positions={r.points}
+              pathOptions={{
+                color: r.color,
+                weight: 5,
+                opacity: 0.9,
+                lineCap: 'round',
+                lineJoin: 'round',
+                className: `route-draw route-day-${r.index}`,
+              }}
+              eventHandlers={{ add: normalizePathLength }}
+            />
+            <Polyline
+              positions={r.points}
+              pathOptions={{
+                color: '#fff9ef',
+                weight: 2,
+                dashArray: '1 9',
+                lineCap: 'round',
+                className: `route-ants route-day-${r.index}`,
+              }}
+            />
+            <Traveller points={r.points} color={r.color} delayMs={r.index * 450 + 2200} />
+          </Fragment>
+        ))}
+        {pins.map(({ a, color, label, delay }) => (
+          <Marker
+            key={a.id}
+            position={[a.location!.lat, a.location!.lon]}
+            icon={pinIcon(color, label, delay)}
+            title={a.title}
+          >
             <Popup>
               <strong className="popup-title">
                 <CategoryIcon category={a.category} size={14} /> {a.title}

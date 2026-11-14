@@ -1600,6 +1600,94 @@ main {
   }
 }
 
+/* ---------- Map: vintage tiles, drawn routes, travellers ---------- */
+.map .leaflet-tile-pane {
+  filter: sepia(0.45) saturate(0.85) hue-rotate(-12deg) contrast(0.96);
+}
+@media (prefers-color-scheme: dark) {
+  .map .leaflet-tile-pane {
+    filter: invert(1) hue-rotate(200deg) sepia(0.35) saturate(0.9) brightness(0.8) contrast(0.95);
+  }
+}
+.map-pin {
+  animation: pin-drop 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes pin-drop {
+  from {
+    translate: 0 -48px;
+    opacity: 0;
+  }
+  60% {
+    opacity: 1;
+  }
+}
+/* The route line draws itself, then a dotted 'ticket perforation' marches along it. */
+.route-draw {
+  animation: route-draw 1.8s cubic-bezier(0.6, 0, 0.3, 1) both;
+  stroke-dasharray: 1;
+}
+@keyframes route-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.route-ants {
+  animation:
+    fade-in 0.4s ease-out 1.8s both,
+    ants 1s linear infinite;
+}
+@keyframes ants {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+.route-day-1 {
+  animation-delay: 0.45s, 0s;
+}
+.route-day-2 {
+  animation-delay: 0.9s, 0s;
+}
+.route-day-3 {
+  animation-delay: 1.35s, 0s;
+}
+.route-day-4,
+.route-day-5,
+.route-day-6 {
+  animation-delay: 1.8s, 0s;
+}
+.route-ants.route-day-1 {
+  animation-delay: 2.25s, 0s;
+}
+.route-ants.route-day-2 {
+  animation-delay: 2.7s, 0s;
+}
+.route-ants.route-day-3 {
+  animation-delay: 3.15s, 0s;
+}
+.traveller {
+  display: block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--pin);
+  border: 3px solid #fff9ef;
+  box-shadow: 0 0 0 2px var(--pin);
+  animation: traveller-pulse 1.4s ease-in-out infinite;
+}
+@keyframes traveller-pulse {
+  50% {
+    box-shadow: 0 0 0 7px color-mix(in srgb, var(--pin) 25%, transparent);
+  }
+}
+
 /* ---------- Feedback ---------- */
 .forecast-skeleton {
   height: 9.5rem;
