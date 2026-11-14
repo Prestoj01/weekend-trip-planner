@@ -53,89 +53,100 @@ export function Itinerary({ days, activities, forecast, unit, onChange, onFocus,
         let pin = 0;
 
         return (
-          <section key={date} className="card day" style={{ '--day-color': color } as React.CSSProperties}>
-            <header className="day-head">
-              <div>
-                <h3>{weekday}</h3>
-                <span className="muted">{label}</span>
-              </div>
-              {wx && (
-                <div className="day-wx" title={describeWeather(wx.code).label}>
-                  <WeatherIcon kind={describeWeather(wx.code).kind} size={18} />
-                  <span>
-                    {formatTemp(wx.maxC, unit)} / <span className="muted">{formatTemp(wx.minC, unit)}</span>
-                  </span>
+          <section key={date} className="card day ticket" style={{ '--day-color': color } as React.CSSProperties}>
+            <div className="stub" aria-hidden>
+              <span className="stub-label">Day</span>
+              <span className="stub-num">{String(dayIndex + 1).padStart(2, '0')}</span>
+              <span className="stub-label">{weekday.slice(0, 3)}</span>
+            </div>
+            <div className="day-body">
+              <header className="day-head">
+                <div>
+                  <h3>{weekday}</h3>
+                  <span className="muted">{label}</span>
                 </div>
-              )}
-            </header>
+                {wx && (
+                  <div className="day-wx" title={describeWeather(wx.code).label}>
+                    <WeatherIcon kind={describeWeather(wx.code).kind} size={18} />
+                    <span>
+                      {formatTemp(wx.maxC, unit)} / <span className="muted">{formatTemp(wx.minC, unit)}</span>
+                    </span>
+                  </div>
+                )}
+              </header>
 
-            {items.length === 0 && editing?.mode !== 'new' && <p className="empty">Nothing planned yet.</p>}
+              {items.length === 0 && editing?.mode !== 'new' && <p className="empty">Nothing planned yet.</p>}
 
-            <ol className="activities">
-              {items.map((a) => {
-                if (a.location) pin += 1;
-                if (editing?.mode === 'edit' && editing.id === a.id) {
+              <ol className="activities">
+                {items.map((a) => {
+                  if (a.location) pin += 1;
+                  if (editing?.mode === 'edit' && editing.id === a.id) {
+                    return (
+                      <li key={a.id}>
+                        <ActivityForm
+                          initial={a}
+                          date={date}
+                          days={days}
+                          onSave={(v) => save(a.id, v)}
+                          onCancel={() => setEditing(null)}
+                          onDelete={() => remove(a.id)}
+                        />
+                      </li>
+                    );
+                  }
                   return (
-                    <li key={a.id}>
-                      <ActivityForm
-                        initial={a}
-                        date={date}
-                        days={days}
-                        onSave={(v) => save(a.id, v)}
-                        onCancel={() => setEditing(null)}
-                        onDelete={() => remove(a.id)}
-                      />
+                    <li
+                      key={a.id}
+                      className={a.id === touchedId || a.id === highlightId ? 'activity just-changed' : 'activity'}
+                    >
+                      <span className="activity-time">{a.time && formatTime(a.time)}</span>
+                      <div className="activity-body">
+                        <div className="activity-title">
+                          <CategoryIcon
+                            category={a.category}
+                            className="cat-icon"
+                            aria-label={CATEGORY_LABELS[a.category]}
+                          />
+                          <strong>{a.title}</strong>
+                          {a.location && !onFocus && <span className="pin">{pin}</span>}
+                          {a.location && onFocus && (
+                            <button
+                              className="pin"
+                              onClick={() => onFocus(a)}
+                              title="Show on map"
+                              aria-label={`Show ${a.title} on map`}
+                            >
+                              {pin}
+                            </button>
+                          )}
+                        </div>
+                        {a.notes && <p className="activity-notes">{a.notes}</p>}
+                      </div>
+                      {a.cost !== undefined && <span className="activity-cost">{formatMoney(a.cost)}</span>}
+                      {onChange && (
+                        <button
+                          className="icon-btn"
+                          onClick={() => setEditing({ mode: 'edit', id: a.id })}
+                          aria-label={`Edit ${a.title}`}
+                          title="Edit"
+                        >
+                          <Pencil size={15} strokeWidth={ICON_STROKE} aria-hidden />
+                        </button>
+                      )}
                     </li>
                   );
-                }
-                return (
-                  <li
-                    key={a.id}
-                    className={a.id === touchedId || a.id === highlightId ? 'activity just-changed' : 'activity'}
-                  >
-                    <span className="activity-time">{a.time && formatTime(a.time)}</span>
-                    <div className="activity-body">
-                      <div className="activity-title">
-                        <CategoryIcon category={a.category} className="cat-icon" aria-label={CATEGORY_LABELS[a.category]} />
-                        <strong>{a.title}</strong>
-                        {a.location && !onFocus && <span className="pin">{pin}</span>}
-                        {a.location && onFocus && (
-                          <button
-                            className="pin"
-                            onClick={() => onFocus(a)}
-                            title="Show on map"
-                            aria-label={`Show ${a.title} on map`}
-                          >
-                            {pin}
-                          </button>
-                        )}
-                      </div>
-                      {a.notes && <p className="activity-notes">{a.notes}</p>}
-                    </div>
-                    {a.cost !== undefined && <span className="activity-cost">{formatMoney(a.cost)}</span>}
-                    {onChange && (
-                      <button
-                        className="icon-btn"
-                        onClick={() => setEditing({ mode: 'edit', id: a.id })}
-                        aria-label={`Edit ${a.title}`}
-                        title="Edit"
-                      >
-                        <Pencil size={15} strokeWidth={ICON_STROKE} aria-hidden />
-                      </button>
-                    )}
-                  </li>
-                );
-              })}
-            </ol>
+                })}
+              </ol>
 
-            {onChange &&
-              (editing?.mode === 'new' && editing.date === date ? (
-                <ActivityForm date={date} days={days} onSave={add} onCancel={() => setEditing(null)} />
-              ) : (
-                <button className="btn ghost small add-btn" onClick={() => setEditing({ mode: 'new', date })}>
-                  + Add activity
-                </button>
-              ))}
+              {onChange &&
+                (editing?.mode === 'new' && editing.date === date ? (
+                  <ActivityForm date={date} days={days} onSave={add} onCancel={() => setEditing(null)} />
+                ) : (
+                  <button className="btn ghost small add-btn" onClick={() => setEditing({ mode: 'new', date })}>
+                    + Add activity
+                  </button>
+                ))}
+            </div>
           </section>
         );
       })}

@@ -85,7 +85,9 @@ export default function App() {
           </a>
         )}
       </nav>
-      {content}
+      <div className="page" key={route.join('/')}>
+        {content}
+      </div>
       <footer className="footer">
         Weather by <a href="https://open-meteo.com/">Open-Meteo</a> · Maps &amp; places by{' '}
         <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · Your trips stay in your browser.

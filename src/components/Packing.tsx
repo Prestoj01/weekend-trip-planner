@@ -3,6 +3,7 @@ import { weatherSuggestions } from '../lib/packing';
 import { newId } from '../lib/storage';
 import { X } from 'lucide-react';
 import type { DailyWeather, PackingItem } from '../types';
+import { Confetti } from './Confetti';
 import { ICON_STROKE } from './icons';
 
 interface Props {
@@ -13,6 +14,7 @@ interface Props {
 
 export function Packing({ items, forecast, onChange }: Props) {
   const [draft, setDraft] = useState('');
+  const [celebrations, setCelebrations] = useState(0);
   const have = new Set(items.map((i) => i.label.toLowerCase()));
   const suggested = weatherSuggestions(forecast).filter((s) => !have.has(s.toLowerCase()));
   const packed = items.filter((i) => i.packed).length;
@@ -46,6 +48,13 @@ export function Packing({ items, forecast, onChange }: Props) {
         </div>
       )}
 
+      {celebrations > 0 && packed === items.length && (
+        <p className="all-packed" key={celebrations}>
+          <Confetti />
+          All packed — have a great trip!
+        </p>
+      )}
+
       <ul className="checklist">
         {items.map((item) => (
           <li key={item.id} className={item.packed ? 'done' : undefined}>
@@ -54,10 +63,19 @@ export function Packing({ items, forecast, onChange }: Props) {
                 type="checkbox"
                 checked={item.packed}
                 disabled={!onChange}
-                onChange={() => onChange?.(items.map((i) => (i.id === item.id ? { ...i, packed: !i.packed } : i)))}
+                onChange={() => {
+                  const next = items.map((i) => (i.id === item.id ? { ...i, packed: !i.packed } : i));
+                  if (!item.packed && next.every((i) => i.packed)) setCelebrations((n) => n + 1);
+                  onChange?.(next);
+                }}
               />
               {item.label}
             </label>
+            {item.packed && (
+              <span className="stamp" aria-hidden>
+                Packed
+              </span>
+            )}
             {onChange && (
               <button
                 className="icon-btn"

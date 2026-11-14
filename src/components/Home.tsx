@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { navigate } from '../hooks';
+import { useTilt } from '../hooks/useTilt';
 import { addDays, daysUntil, eachDay, formatRange, MAX_TRIP_DAYS, nextWeekend } from '../lib/dates';
 import { defaultPacking } from '../lib/packing';
 import { sampleTrip } from '../lib/sample';
@@ -25,6 +26,7 @@ export function Home({ trips, onCreate, onDelete }: Props) {
   const [end, setEnd] = useState(weekend.end);
   const [travelers, setTravelers] = useState(2);
   const [preview] = useState(sampleTrip);
+  const previewRef = useTilt<HTMLElement>(5);
 
   const tooLong = eachDay(start, end).length > MAX_TRIP_DAYS;
   const inverted = end < start;
@@ -146,7 +148,7 @@ export function Home({ trips, onCreate, onDelete }: Props) {
           </div>
         </form>
 
-        <figure className="preview">
+        <figure className="preview tilt" ref={previewRef}>
           <Itinerary days={[addDays(preview.startDate, 1)]} activities={preview.activities} forecast={[]} unit="F" />
           <figcaption className="muted small">
             A Saturday from the sample trip, rendered by the real planner.
@@ -158,34 +160,38 @@ export function Home({ trips, onCreate, onDelete }: Props) {
         <section className="saved">
           <h2>Your trips</h2>
           <ul className="trip-grid">
-            {sorted.map((t) => {
-              const past = daysUntil(t.endDate) < 0;
-              return (
-                <li key={t.id} className={`card trip-card${past ? ' past' : ''}`}>
-                  <a href={`#/trip/${t.id}`} className="trip-card-link">
-                    <h3>{t.name}</h3>
-                    <p className="with-icon">
-                      <MapPin size={15} strokeWidth={ICON_STROKE} aria-hidden /> {t.destination.name}
-                    </p>
-                    <p className="muted num">
-                      {formatRange(t.startDate, t.endDate)} · {t.activities.length}{' '}
-                      {t.activities.length === 1 ? 'plan' : 'plans'}
-                    </p>
-                  </a>
-                  <button
-                    className="icon-btn"
-                    aria-label={`Delete ${t.name}`}
-                    title="Delete trip"
-                    onClick={() => confirm(`Delete "${t.name}"?`) && onDelete(t.id)}
-                  >
-                    <X size={16} strokeWidth={ICON_STROKE} aria-hidden />
-                  </button>
-                </li>
-              );
-            })}
+            {sorted.map((t, i) => (
+              <TripCard key={t.id} trip={t} index={i} onDelete={onDelete} />
+            ))}
           </ul>
         </section>
       )}
     </main>
+  );
+}
+
+function TripCard({ trip: t, index, onDelete }: { trip: Trip; index: number; onDelete: (id: string) => void }) {
+  const ref = useTilt<HTMLLIElement>();
+  const past = daysUntil(t.endDate) < 0;
+  return (
+    <li ref={ref} className={`card trip-card tilt${past ? ' past' : ''}`} style={{ animationDelay: `${index * 70}ms` }}>
+      <a href={`#/trip/${t.id}`} className="trip-card-link">
+        <h3>{t.name}</h3>
+        <p className="with-icon">
+          <MapPin size={15} strokeWidth={ICON_STROKE} aria-hidden /> {t.destination.name}
+        </p>
+        <p className="muted num">
+          {formatRange(t.startDate, t.endDate)} · {t.activities.length} {t.activities.length === 1 ? 'plan' : 'plans'}
+        </p>
+      </a>
+      <button
+        className="icon-btn"
+        aria-label={`Delete ${t.name}`}
+        title="Delete trip"
+        onClick={() => confirm(`Delete "${t.name}"?`) && onDelete(t.id)}
+      >
+        <X size={16} strokeWidth={ICON_STROKE} aria-hidden />
+      </button>
+    </li>
   );
 }
