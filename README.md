@@ -1,4 +1,4 @@
-# Weekender — Weekend Trip Planner
+# Friday Ticket — Weekend Trip Planner
 
 Plan a weekend getaway in one place: live forecast, things to do nearby, a day-by-day itinerary on a map, a weather-aware packing list, and a budget. Free, no sign-up, no API keys.
 

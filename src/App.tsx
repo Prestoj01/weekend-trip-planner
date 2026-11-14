@@ -4,7 +4,7 @@ import { TripView } from './components/TripView';
 import { navigate, useHashRoute, useTrips } from './hooks';
 import { buildIcs, downloadFile } from './lib/ics';
 import { decodeTrip, encodeTrip, newId } from './lib/storage';
-import { Mountain } from 'lucide-react';
+import { Ticket } from 'lucide-react';
 import type { Trip } from './types';
 
 export default function App() {
@@ -75,9 +75,9 @@ export default function App() {
       <nav className="topbar">
         <a href="#/" className="brand">
           <span className="brand-mark" aria-hidden>
-            <Mountain size={18} strokeWidth={2} />
+            <Ticket size={18} strokeWidth={2.25} />
           </span>
-          Weekender
+          Friday Ticket
         </a>
         {page && (
           <a href="#/" className="btn ghost small">

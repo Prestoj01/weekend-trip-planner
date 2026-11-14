@@ -1,7 +1,8 @@
 import type { Activity, Trip } from '../types';
 import { addDays, eachDay, parseISODate } from './dates';
 
-export const DAY_COLORS = ['#e8590c', '#1c7ed6', '#2f9e44', '#ae3ec9', '#f08c00', '#0c8599', '#d6336c'];
+/** Sunset-palette day colours, shared by itinerary stubs, map pins and route lines. */
+export const DAY_COLORS = ['#e4572e', '#355c7d', '#c06c84', '#e9a23b', '#6c5b7b', '#2f7f79', '#a14f67'];
 
 /** Timed activities in chronological order, then untimed ones in the order they were added. */
 export function sortActivities(activities: Activity[]): Activity[] {
