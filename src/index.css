@@ -884,11 +884,16 @@ main {
 }
 .forecast li {
   font-variant-numeric: tabular-nums;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
   padding: var(--space-3) var(--space-2);
+  border: 2px solid var(--edge);
+  /* card radius minus the card's padding would be < 0, so use the small step */
   border-radius: var(--radius-md);
   background: var(--bg);
 }
@@ -1378,6 +1383,223 @@ main {
   opacity: 1;
 }
 
+/* ---------- Weather-reactive forecast tiles ---------- */
+.wx-fx,
+.wx-fx::before,
+.wx-fx::after {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+.wx-fx::before,
+.wx-fx::after {
+  content: '';
+}
+/* Sunny: warm wash and slowly turning rays behind the icon */
+.wx-clear,
+.wx-mostly-clear {
+  background: color-mix(in srgb, var(--peach) 35%, var(--bg));
+}
+.wx-clear .wx-fx::before,
+.wx-mostly-clear .wx-fx::before {
+  inset: -60%;
+  top: -95%;
+  background: repeating-conic-gradient(
+    from 0deg at 50% 50%,
+    color-mix(in srgb, var(--mustard) 45%, transparent) 0 8deg,
+    transparent 8deg 22deg
+  );
+  animation: spin 30s linear infinite;
+}
+/* Clouds drifting across */
+.wx-partly-cloudy,
+.wx-overcast,
+.wx-mostly-clear {
+  --cloud-tile: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='60'%3E%3Cpath d='M20 44a14 14 0 0 1 20-13 18 18 0 0 1 33 3 12 12 0 0 1 17 10z' fill='%23fff9ef' fill-opacity='.9'/%3E%3C/svg%3E");
+}
+.wx-partly-cloudy .wx-fx::after,
+.wx-overcast .wx-fx::after,
+.wx-mostly-clear .wx-fx::after {
+  background: var(--cloud-tile) 0 6px / 160px 60px repeat-x;
+  animation: wx-drift 14s linear infinite;
+}
+.wx-overcast {
+  background: color-mix(in srgb, var(--plum) 18%, var(--bg));
+}
+.wx-overcast .wx-fx::before {
+  background: var(--cloud-tile) 40px 34px / 120px 45px repeat-x;
+  opacity: 0.7;
+  animation: wx-drift 22s linear infinite reverse;
+}
+@keyframes wx-drift {
+  to {
+    background-position-x: 160px;
+  }
+}
+/* Fog: soft bands sliding past each other */
+.wx-fog {
+  background: color-mix(in srgb, var(--muted) 16%, var(--bg));
+}
+.wx-fog .wx-fx::before,
+.wx-fog .wx-fx::after {
+  background: repeating-linear-gradient(
+    180deg,
+    transparent 0 14px,
+    color-mix(in srgb, var(--surface) 80%, transparent) 14px 22px
+  );
+  background-size: 200% 100%;
+  animation: wx-fog 9s ease-in-out infinite alternate;
+}
+.wx-fog .wx-fx::after {
+  transform: translateY(9px);
+  animation-duration: 13s;
+  animation-direction: alternate-reverse;
+}
+@keyframes wx-fog {
+  from {
+    translate: -18% 0;
+  }
+  to {
+    translate: 18% 0;
+  }
+}
+/* Rain and drizzle: slanted streaks falling (two layers for depth) */
+.wx-drizzle,
+.wx-rain,
+.wx-storm {
+  --rain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='60'%3E%3Cg stroke='%23355c7d' stroke-width='2' stroke-linecap='round' stroke-opacity='.55'%3E%3Cpath d='M8 4l-3 10M28 20l-3 10M16 38l-3 10M36 46l-3 10'/%3E%3C/g%3E%3C/svg%3E");
+  background: color-mix(in srgb, var(--dusk-blue) 20%, var(--bg));
+}
+.wx-drizzle .wx-fx::before,
+.wx-rain .wx-fx::before,
+.wx-storm .wx-fx::before {
+  background: var(--rain) 0 0 / 40px 60px;
+  animation: wx-rain 0.7s linear infinite;
+}
+.wx-rain .wx-fx::after,
+.wx-storm .wx-fx::after {
+  background: var(--rain) 20px 30px / 28px 42px;
+  opacity: 0.7;
+  animation: wx-rain-far 0.5s linear infinite;
+}
+.wx-drizzle .wx-fx::before {
+  opacity: 0.5;
+  animation-duration: 1.2s;
+}
+@keyframes wx-rain {
+  to {
+    background-position: -12px 60px;
+  }
+}
+@keyframes wx-rain-far {
+  to {
+    background-position: 12px 72px;
+  }
+}
+/* Storm: rain plus a lightning flash every few seconds */
+.wx-storm {
+  background: color-mix(in srgb, var(--plum) 35%, var(--bg));
+}
+.wx-storm .wx-fx {
+  animation: wx-lightning 5s steps(1) infinite;
+}
+@keyframes wx-lightning {
+  0%,
+  100% {
+    background: transparent;
+  }
+  88% {
+    background: rgb(255 249 239 / 0.85);
+  }
+  89% {
+    background: transparent;
+  }
+  91% {
+    background: rgb(255 249 239 / 0.6);
+  }
+  92% {
+    background: transparent;
+  }
+}
+/* Snow: two layers of flakes falling and swaying */
+.wx-snow {
+  --flakes: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cg fill='%23ffffff'%3E%3Ccircle cx='8' cy='10' r='2.4'/%3E%3Ccircle cx='38' cy='4' r='1.8'/%3E%3Ccircle cx='24' cy='30' r='2.8'/%3E%3Ccircle cx='50' cy='38' r='2'/%3E%3Ccircle cx='12' cy='50' r='1.6'/%3E%3C/g%3E%3C/svg%3E");
+  background: color-mix(in srgb, var(--dusk-blue) 28%, var(--bg));
+}
+.wx-snow .wx-fx::before {
+  background: var(--flakes) 0 0 / 60px 60px;
+  animation: wx-snow 4s linear infinite;
+}
+.wx-snow .wx-fx::after {
+  background: var(--flakes) 30px 20px / 36px 36px;
+  opacity: 0.7;
+  animation: wx-snow-far 6s linear infinite;
+}
+@keyframes wx-snow {
+  50% {
+    background-position: 8px 30px;
+  }
+  to {
+    background-position: 0 60px;
+  }
+}
+@keyframes wx-snow-far {
+  50% {
+    background-position: 24px 38px;
+  }
+  to {
+    background-position: 30px 56px;
+  }
+}
+
+/* Idle icon motion */
+.wx-anim-clear {
+  animation: spin 14s linear infinite;
+}
+.wx-anim-mostly-clear,
+.wx-anim-partly-cloudy,
+.wx-anim-overcast,
+.wx-anim-fog {
+  animation: bob 3.2s ease-in-out infinite;
+}
+.wx-anim-drizzle,
+.wx-anim-rain,
+.wx-anim-snow {
+  animation: sway 2.4s ease-in-out infinite;
+}
+.wx-anim-storm {
+  animation: shiver 5s infinite;
+}
+@keyframes bob {
+  50% {
+    translate: 0 -3px;
+  }
+}
+@keyframes sway {
+  25% {
+    rotate: -6deg;
+  }
+  75% {
+    rotate: 6deg;
+  }
+}
+@keyframes shiver {
+  86%,
+  100% {
+    translate: 0 0;
+  }
+  88% {
+    translate: -2px 0;
+  }
+  90% {
+    translate: 2px 0;
+  }
+  92% {
+    translate: -1px 0;
+  }
+}
+
 /* ---------- Feedback ---------- */
 .forecast-skeleton {
   height: 9.5rem;
@@ -1512,4 +1734,9 @@ main {
 .icon-btn {
   display: inline-grid;
   place-items: center;
+}
+
+/* Tinted weather tiles: keep text at full ink so it stays above 4.5:1 on every tint. */
+.forecast .wx .muted {
+  color: var(--ink);
 }

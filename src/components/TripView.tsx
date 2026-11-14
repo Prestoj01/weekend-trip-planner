@@ -141,7 +141,8 @@ export function TripView({ trip, onChange, actions }: Props) {
             {forecast.map((d) => {
               const { kind, label } = describeWeather(d.code);
               return (
-                <li key={d.date}>
+                <li key={d.date} className={`wx wx-${kind}`}>
+                  <span className="wx-fx" aria-hidden />
                   <span className="muted">
                     {new Date(d.date + 'T12:00').toLocaleDateString(undefined, { weekday: 'short' })}
                   </span>

@@ -46,7 +46,16 @@ export function CategoryIcon({ category, ...props }: { category: ActivityCategor
   return <Icon size={16} strokeWidth={ICON_STROKE} aria-hidden {...props} />;
 }
 
-export function WeatherIcon({ kind, ...props }: { kind: WeatherKind } & LucideProps) {
+/** Weather glyph with a small idle animation matching the conditions (spin, bob, sway…). */
+export function WeatherIcon({ kind, className, ...props }: { kind: WeatherKind } & LucideProps) {
   const Icon = WEATHER_ICONS[kind];
-  return <Icon size={20} strokeWidth={ICON_STROKE} aria-hidden {...props} />;
+  return (
+    <Icon
+      size={20}
+      strokeWidth={ICON_STROKE}
+      aria-hidden
+      className={`wx-anim wx-anim-${kind}${className ? ` ${className}` : ''}`}
+      {...props}
+    />
+  );
 }
