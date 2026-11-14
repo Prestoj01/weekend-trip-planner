@@ -7,6 +7,7 @@ import { newId } from '../lib/storage';
 import { MapPin, X } from 'lucide-react';
 import type { Place, Trip } from '../types';
 import { ICON_STROKE } from './icons';
+import { HeroScene } from './HeroScene';
 import { Itinerary } from './Itinerary';
 import { PlaceSearch } from './PlaceSearch';
 
@@ -58,9 +59,25 @@ export function Home({ trips, onCreate, onDelete }: Props) {
   return (
     <main className="home">
       <section className="hero">
-        <h1>
-          Your next weekend trip, <span className="accent">planned on one page</span>
-        </h1>
+        <HeroScene>
+          <p className="kicker">Admit one · Fri → Sun</p>
+          <h1>
+            <span className="sr-only">Your next weekend, planned on one ticket</span>
+            <span aria-hidden>
+              {['Your', 'next', 'weekend,'].map((w, i) => (
+                <span key={w} className="word" style={{ animationDelay: `${0.15 + i * 0.09}s` }}>
+                  {w}{' '}
+                </span>
+              ))}
+              <br />
+              {['planned', 'on', 'one', 'ticket'].map((w, i) => (
+                <span key={w} className="word pop" style={{ animationDelay: `${0.45 + i * 0.09}s` }}>
+                  {w}{' '}
+                </span>
+              ))}
+            </span>
+          </h1>
+        </HeroScene>
         <p className="lede">
           The forecast, things to do nearby, and a day-by-day plan on a map — plus a packing list and budget. Share it
           with one link. Free, no sign-up.
