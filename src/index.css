@@ -2204,3 +2204,144 @@ main {
     opacity: 0.8;
   }
 }
+
+/* ---------- Destination poster on the trip page ---------- */
+.poster-banner {
+  height: clamp(220px, 24vw, 290px);
+  margin-top: var(--space-2);
+}
+.poster-banner .poster-copy {
+  padding-top: var(--space-6);
+}
+.banner-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 7vw, 4.6rem);
+  line-height: 1;
+  text-transform: uppercase;
+  color: #fff9ef;
+  text-shadow: 4px 4px 0 var(--edge);
+  animation: word-in 0.8s cubic-bezier(0.2, 0.9, 0.3, 1.25) 0.1s backwards;
+}
+.banner-sub {
+  display: inline-block;
+  margin: var(--space-3) 0 0;
+  padding: 0 var(--space-2);
+  font-family: var(--font-head);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-weight: 600;
+  color: #fff9ef;
+  background: var(--edge);
+  border-radius: var(--radius-sm);
+  animation: word-in 0.8s cubic-bezier(0.2, 0.9, 0.3, 1.25) 0.25s backwards;
+}
+.poster-banner .kicker {
+  animation-delay: 0.4s;
+}
+
+/* Terrain variants */
+.water {
+  fill: var(--dusk-blue);
+}
+.skyline .alt {
+  fill: var(--mid);
+}
+.scene-fx {
+  opacity: 0.75;
+}
+.wave {
+  fill: none;
+  stroke: #fff9ef;
+  stroke-width: 3;
+  stroke-linecap: round;
+  opacity: 0.45;
+  animation: wave 3.5s linear infinite;
+}
+.wave.w2 {
+  opacity: 0.3;
+  animation-duration: 5s;
+  animation-direction: reverse;
+}
+@keyframes wave {
+  to {
+    transform: translateX(-60px);
+  }
+}
+.terrain-lowland .birds {
+  /* gulls instead of mountain birds: same flight, just higher */
+  translate: 0 -30px;
+}
+
+/* Weather moods: sky tint, sun visibility, and a full-poster overlay */
+.poster.scene-cloudy .sun {
+  opacity: 0.45;
+}
+.poster.scene-cloudy .cloud {
+  fill: #fff9ef;
+}
+.poster.scene-wet,
+.poster.scene-storm {
+  --sky-top: #8a86a0;
+  --sky-bottom: #ddd3cb;
+}
+.poster.scene-snow {
+  --sky-top: #a9b7c9;
+  --sky-bottom: #f1efec;
+}
+.poster.scene-fog {
+  --sky-top: #c3b9b8;
+  --sky-bottom: #efe7dd;
+}
+@media (prefers-color-scheme: dark) {
+  .poster.scene-wet,
+  .poster.scene-storm {
+    --sky-top: #16131f;
+    --sky-bottom: #4a4560;
+  }
+  .poster.scene-snow {
+    --sky-top: #1c2233;
+    --sky-bottom: #5b6683;
+  }
+  .poster.scene-fog {
+    --sky-top: #231c2c;
+    --sky-bottom: #5d5462;
+  }
+}
+.poster.scene-wet .sun,
+.poster.scene-storm .sun,
+.poster.scene-snow .sun,
+.poster.scene-fog .sun {
+  display: none;
+}
+.scene-fx,
+.scene-fx::after {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+.poster-copy {
+  position: relative;
+  z-index: 1;
+}
+.scene-wet .scene-fx,
+.scene-storm .scene-fx {
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='60'%3E%3Cg stroke='%23fff9ef' stroke-width='2' stroke-linecap='round' stroke-opacity='.6'%3E%3Cpath d='M8 4l-3 10M28 20l-3 10M16 38l-3 10M36 46l-3 10'/%3E%3C/g%3E%3C/svg%3E")
+    0 0 / 40px 60px;
+  animation: wx-rain 0.6s linear infinite;
+}
+.scene-storm .scene-fx::after {
+  content: '';
+  animation: wx-lightning 6s steps(1) infinite;
+}
+.scene-snow .scene-fx {
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cg fill='%23ffffff'%3E%3Ccircle cx='8' cy='10' r='2.4'/%3E%3Ccircle cx='38' cy='4' r='1.8'/%3E%3Ccircle cx='24' cy='30' r='2.8'/%3E%3Ccircle cx='50' cy='38' r='2'/%3E%3Ccircle cx='12' cy='50' r='1.6'/%3E%3C/g%3E%3C/svg%3E")
+    0 0 / 60px 60px;
+  animation: wx-snow 5s linear infinite;
+}
+.scene-fog .scene-fx {
+  background: repeating-linear-gradient(180deg, transparent 0 26px, rgb(255 249 239 / 0.35) 26px 40px);
+  background-size: 200% 100%;
+  animation: wx-fog 12s ease-in-out infinite alternate;
+}

@@ -11,6 +11,8 @@ import { loadSuggestions } from '../lib/api';
 import { planWeekend, type PlacePool } from '../lib/planner';
 import { sampleSuggestions } from '../lib/sample';
 import { useToast } from './Toast';
+import { HeroScene } from './HeroScene';
+import { sceneWeather, terrainFor } from '../lib/scene';
 import type { Activity, Suggestion, Trip } from '../types';
 import { Budget } from './Budget';
 import { Itinerary } from './Itinerary';
@@ -109,6 +111,24 @@ export function TripView({ trip, onChange, actions }: Props) {
 
   return (
     <main className="trip">
+      {forecastState.status === 'loading' ? (
+        <div className="poster poster-banner skeleton" aria-hidden />
+      ) : (
+        <HeroScene
+          className="poster-banner"
+          terrain={terrainFor(forecastState.status === 'ready' ? forecastState.elevation : 200)}
+          weather={sceneWeather(forecast)}
+        >
+          <p className="kicker">{formatRange(trip.startDate, trip.endDate)}</p>
+          <p className="banner-title">{trip.destination.name}</p>
+          {(trip.destination.region || trip.destination.country) && (
+            <p className="banner-sub">
+              {[trip.destination.region, trip.destination.country].filter(Boolean).join(' · ')}
+            </p>
+          )}
+        </HeroScene>
+      )}
+
       <header className="trip-head">
         <div className="trip-title">
           {onChange ? (

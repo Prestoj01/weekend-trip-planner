@@ -1,13 +1,26 @@
-import { useEffect } from 'react';
+import { useEffect, useId } from 'react';
 import { useOffscreenPause } from '../hooks/useOffscreenPause';
+import type { SceneWeather, Terrain } from '../lib/scene';
 
 /**
  * Animated travel-poster landscape. Layers shift with the pointer and scroll (parallax by
  * `--depth`); sun, clouds, birds and a train are animated in CSS. Fully static under
  * prefers-reduced-motion.
  */
-export function HeroScene({ children }: { children: React.ReactNode }) {
+
+export function HeroScene({
+  children,
+  terrain = 'mountains',
+  weather = 'sunny',
+  className = '',
+}: {
+  children: React.ReactNode;
+  terrain?: Terrain;
+  weather?: SceneWeather;
+  className?: string;
+}) {
   const { ref, hidden } = useOffscreenPause<HTMLDivElement>();
+  const skyId = useId();
 
   useEffect(() => {
     const el = ref.current;
@@ -42,15 +55,15 @@ export function HeroScene({ children }: { children: React.ReactNode }) {
   }, [ref, hidden]);
 
   return (
-    <div className="poster" ref={ref}>
+    <div className={`poster terrain-${terrain} scene-${weather} ${className}`} ref={ref}>
       <svg className="scene" viewBox="0 0 1200 460" preserveAspectRatio="xMidYMax slice" aria-hidden>
         <defs>
-          <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id={skyId} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" className="sky-top" />
             <stop offset="1" className="sky-bottom" />
           </linearGradient>
         </defs>
-        <rect width="1200" height="460" fill="url(#sky)" />
+        <rect width="1200" height="460" fill={`url(#${CSS.escape(skyId)})`} />
 
         <g className="stars">
           {STARS.map(([x, y, r], i) => (
@@ -84,20 +97,57 @@ export function HeroScene({ children }: { children: React.ReactNode }) {
           <path className="bird b3" d="M0 0 q5 -5 10 0 q5 -5 10 0" transform="translate(-22 26)" />
         </g>
 
-        <g className="layer m-far" style={{ '--depth': 0.35 } as React.CSSProperties}>
-          <path d="M-60 290 L90 220 L190 262 L330 160 L470 258 L590 196 L720 268 L860 148 L990 240 L1110 196 L1260 252 V460 H-60Z" />
-          <path className="snow" d="M330 160 L362 184 L346 182 L334 194 L320 182 L302 181Z" />
-          <path className="snow" d="M860 148 L894 174 L876 171 L862 184 L848 172 L828 173Z" />
-        </g>
-        <g className="layer m-mid" style={{ '--depth': 0.6 } as React.CSSProperties}>
-          <path d="M-60 330 L130 250 L260 316 L410 228 L560 322 L700 262 L850 336 L990 252 L1260 330 V460 H-60Z" />
-        </g>
-        <g className="layer m-near" style={{ '--depth': 0.9 } as React.CSSProperties}>
-          <path d="M-60 372 Q120 318 300 360 T660 352 T1000 364 T1260 342 V460 H-60Z" />
-          {TREES.map(([x, y, h], i) => (
-            <path key={i} className="tree" d={`M${x} ${y} l${h * 0.32} ${h} h${-h * 0.64}Z`} />
-          ))}
-        </g>
+        {terrain === 'mountains' && (
+          <>
+            <g className="layer m-far" style={{ '--depth': 0.35 } as React.CSSProperties}>
+              <path d="M-60 290 L90 220 L190 262 L330 160 L470 258 L590 196 L720 268 L860 148 L990 240 L1110 196 L1260 252 V460 H-60Z" />
+              <path className="snow" d="M330 160 L362 184 L346 182 L334 194 L320 182 L302 181Z" />
+              <path className="snow" d="M860 148 L894 174 L876 171 L862 184 L848 172 L828 173Z" />
+            </g>
+            <g className="layer m-mid" style={{ '--depth': 0.6 } as React.CSSProperties}>
+              <path d="M-60 330 L130 250 L260 316 L410 228 L560 322 L700 262 L850 336 L990 252 L1260 330 V460 H-60Z" />
+            </g>
+          </>
+        )}
+        {terrain === 'hills' && (
+          <>
+            <g className="layer m-far" style={{ '--depth': 0.35 } as React.CSSProperties}>
+              <path d="M-60 300 Q100 230 260 280 T600 262 T940 250 T1260 270 V460 H-60Z" />
+            </g>
+            <g className="layer m-mid" style={{ '--depth': 0.6 } as React.CSSProperties}>
+              <path d="M-60 336 Q160 282 360 326 T760 314 T1260 318 V460 H-60Z" />
+            </g>
+          </>
+        )}
+        {terrain === 'lowland' && (
+          <>
+            <g className="layer m-far skyline" style={{ '--depth': 0.35 } as React.CSSProperties}>
+              {SKYLINE.map(([x, w, h], i) => (
+                <rect key={i} className={i % 3 === 1 ? 'alt' : undefined} x={x} y={330 - h} width={w} height={h + 140} />
+              ))}
+              <rect x="-60" y="326" width="1320" height="140" />
+            </g>
+            <g className="layer water" style={{ '--depth': 0.6 } as React.CSSProperties}>
+              <rect x="-60" y="330" width="1320" height="130" />
+              <path
+                className="wave"
+                d="M-60 346 q30 -8 60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0"
+              />
+              <path
+                className="wave w2"
+                d="M-60 364 q30 -8 60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0"
+              />
+            </g>
+          </>
+        )}
+        {terrain !== 'lowland' && (
+          <g className="layer m-near" style={{ '--depth': 0.9 } as React.CSSProperties}>
+            <path d="M-60 372 Q120 318 300 360 T660 352 T1000 364 T1260 342 V460 H-60Z" />
+            {TREES.map(([x, y, h], i) => (
+              <path key={i} className="tree" d={`M${x} ${y} l${h * 0.32} ${h} h${-h * 0.64}Z`} />
+            ))}
+          </g>
+        )}
         <g className="layer m-fore" style={{ '--depth': 1.25 } as React.CSSProperties}>
           <path d="M-60 404 H1260 V460 H-60Z" />
           <line className="rail" x1="-60" y1="404" x2="1260" y2="404" />
@@ -120,6 +170,7 @@ export function HeroScene({ children }: { children: React.ReactNode }) {
           </g>
         </g>
       </svg>
+      {weather !== 'sunny' && weather !== 'cloudy' && <div className="scene-fx" aria-hidden />}
       <div className="poster-copy">{children}</div>
     </div>
   );
@@ -161,4 +212,25 @@ const TREES: [number, number, number][] = [
   [780, 344, 28],
   [1060, 340, 30],
   [1088, 346, 22],
+];
+
+const SKYLINE: [x: number, w: number, h: number][] = [
+  [20, 60, 70],
+  [90, 40, 120],
+  [140, 70, 90],
+  [220, 36, 160],
+  [262, 54, 110],
+  [330, 80, 60],
+  [420, 44, 140],
+  [470, 60, 190],
+  [540, 38, 120],
+  [590, 90, 80],
+  [690, 50, 150],
+  [750, 64, 100],
+  [820, 40, 210],
+  [870, 70, 130],
+  [950, 46, 90],
+  [1005, 60, 160],
+  [1075, 50, 110],
+  [1135, 70, 75],
 ];
