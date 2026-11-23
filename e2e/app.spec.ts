@@ -10,7 +10,7 @@ test('creates a trip from a destination search', async ({ page }) => {
   await expect(page).toHaveURL(/#\/trip\//);
   await expect(page.getByRole('textbox', { name: 'Trip name' })).toHaveValue('Weekend in Asheville');
   await expect(page.getByRole('heading', { name: 'Weather in Asheville' })).toBeVisible();
-  await expect(page.getByText('Nothing planned yet.').first()).toBeVisible();
+  await expect(page.getByText(/Nothing planned yet/).first()).toBeVisible();
 });
 
 test('plans a weekend automatically, with undo', async ({ page }) => {
@@ -21,13 +21,13 @@ test('plans a weekend automatically, with undo', async ({ page }) => {
   await expect(page.locator('.activity')).toHaveCount(0);
 
   await page.getByRole('button', { name: 'Plan my weekend' }).click();
-  await expect(page.getByRole('status')).toContainText(/Added \d+ stops/);
+  await expect(page.locator('.toast')).toContainText(/Added \d+ stops/);
   const count = await page.locator('.activity').count();
   expect(count).toBeGreaterThanOrEqual(6);
   await expect(page.locator('.day').first().getByText('2:30 PM')).toBeVisible();
   await expect(page.getByText(/Dinner at /).first()).toBeVisible();
 
-  await page.getByRole('status').getByRole('button', { name: 'Undo' }).click();
+  await page.locator('.toast').getByRole('button', { name: 'Undo' }).click();
   await expect(page.locator('.activity')).toHaveCount(0);
 });
 
@@ -54,12 +54,43 @@ test.describe('sample trip', () => {
     await expect(page.getByText('$697')).toBeVisible(); // 685 + 12
   });
 
+  test('drags a stop to another day', async ({ page }, info) => {
+    test.skip(info.project.name !== 'desktop', 'mouse drag');
+    const handle = page.getByRole('button', { name: 'Move Brewery crawl' });
+    await handle.scrollIntoViewIfNeeded();
+    const sunday = page.locator('.day').nth(2);
+    const from = (await handle.boundingBox())!;
+    const to = (await sunday.locator('.day-head').boundingBox())!;
+    await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(from.x + 20, from.y + 20, { steps: 5 });
+    await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 15 });
+    await page.mouse.up();
+    await expect(sunday.getByText('Brewery crawl')).toBeVisible();
+    await expect(page.locator('.day').nth(1).getByText('Brewery crawl')).toHaveCount(0);
+  });
+
+  test('moves a stop with the keyboard', async ({ page }, info) => {
+    test.skip(info.project.name !== 'desktop', 'keyboard');
+    const saturday = page.locator('.day').nth(1);
+    await saturday.getByRole('button', { name: 'Move Brewery crawl' }).focus();
+    await page.keyboard.press('Space');
+    await page.keyboard.press('ArrowUp');
+    await page.waitForTimeout(150);
+    await page.keyboard.press('ArrowUp');
+    await page.waitForTimeout(150);
+    await page.keyboard.press('Space');
+    const titles = await saturday.locator('.activity strong').allInnerTexts();
+    expect(titles[0]).toBe('Brewery crawl');
+    await expect(saturday.locator('.activity').first()).toContainText('9:00 AM');
+  });
+
   test('deleting an activity can be undone', async ({ page }) => {
     const friday = page.locator('.day').first();
     await friday.getByRole('button', { name: 'Edit Check in downtown' }).click();
     await friday.getByRole('button', { name: 'Delete' }).click();
     await expect(friday.getByText('Check in downtown')).toHaveCount(0);
-    await page.getByRole('status').getByRole('button', { name: 'Undo' }).click();
+    await page.locator('.toast').getByRole('button', { name: 'Undo' }).click();
     await expect(friday.getByText('Check in downtown')).toBeVisible();
   });
 
@@ -67,7 +98,7 @@ test.describe('sample trip', () => {
     await page.getByRole('button', { name: 'Delete' }).click();
     await expect(page).toHaveURL(/#\/$/);
     await expect(page.getByText('Blue Ridge Getaway')).toHaveCount(0);
-    await page.getByRole('status').getByRole('button', { name: 'Undo' }).click();
+    await page.locator('.toast').getByRole('button', { name: 'Undo' }).click();
     await expect(page).toHaveURL(/#\/trip\//);
     await expect(page.getByRole('textbox', { name: 'Trip name' })).toHaveValue('Blue Ridge Getaway');
   });
@@ -101,7 +132,7 @@ test.describe('sample trip', () => {
     test.skip(info.project.name !== 'desktop' || browserName !== 'chromium', 'clipboard flow is desktop-only');
     await context.grantPermissions(['clipboard-read', 'clipboard-write']);
     await page.getByRole('button', { name: 'Share' }).click();
-    await expect(page.getByRole('status')).toContainText(/copied/i);
+    await expect(page.locator('.toast')).toContainText(/copied/i);
     const url = await page.evaluate(() => navigator.clipboard.readText());
     expect(url).toContain('#/share/');
 

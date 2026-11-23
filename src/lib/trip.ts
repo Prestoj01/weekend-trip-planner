@@ -49,3 +49,40 @@ export function computeBudget(trip: Trip): Budget {
 
 export const formatMoney = (n: number) =>
   n.toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: n % 1 === 0 ? 0 : 2 });
+
+export type DropTarget = { kind: 'activity'; id: string } | { kind: 'day'; date: string };
+
+/**
+ * Drag-and-drop semantics for the itinerary.
+ * - Onto another day (or another day's activity): the activity moves there and keeps its time.
+ * - Onto an activity in the same day: it's re-ordered, and time slots stay in place —
+ *   the activity that lands in the 2:30 PM position takes the 2:30 PM time.
+ */
+export function moveActivity(list: Activity[], activeId: string, target: DropTarget): Activity[] {
+  const active = list.find((a) => a.id === activeId);
+  if (!active) return list;
+
+  const targetDate = target.kind === 'day' ? target.date : list.find((a) => a.id === target.id)?.date;
+  if (!targetDate) return list;
+
+  if (targetDate !== active.date) {
+    const moved = { ...active, date: targetDate };
+    const rest = list.filter((a) => a.id !== activeId);
+    const at = target.kind === 'activity' ? rest.findIndex((a) => a.id === target.id) : -1;
+    return at === -1 ? [...rest, moved] : [...rest.slice(0, at), moved, ...rest.slice(at)];
+  }
+
+  if (target.kind === 'day' || target.id === activeId) return list;
+
+  const day = sortActivities(list.filter((a) => a.date === targetDate));
+  const from = day.findIndex((a) => a.id === activeId);
+  const to = day.findIndex((a) => a.id === target.id);
+  const reordered = [...day];
+  reordered.splice(to, 0, ...reordered.splice(from, 1));
+  const slotTimes = day.map((a) => a.time);
+  const retimed = reordered.map((a, i) => ({ ...a, time: slotTimes[i] }));
+
+  // Keep other days where they were; rewrite this day's entries in the new order.
+  let k = 0;
+  return list.map((a) => (a.date === targetDate ? retimed[k++] : a));
+}

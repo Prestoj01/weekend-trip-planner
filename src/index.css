@@ -2147,3 +2147,60 @@ main {
 .just-changed {
   animation-fill-mode: backwards;
 }
+
+/* ---------- Drag and drop ---------- */
+.activity-time {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+}
+.drag-handle {
+  display: inline-grid;
+  place-items: center;
+  margin-left: calc(-1 * var(--space-2));
+  padding: 2px 0;
+  border: none;
+  background: none;
+  color: var(--muted);
+  cursor: grab;
+  border-radius: var(--radius-sm);
+  touch-action: none;
+  opacity: 0.45;
+  transition: opacity 0.15s;
+}
+.activity:hover .drag-handle,
+.drag-handle:focus-visible {
+  opacity: 1;
+}
+.drag-handle:active {
+  cursor: grabbing;
+}
+.activity.is-dragging {
+  opacity: 0.35;
+}
+.ticket.drop-target {
+  box-shadow: 6px 6px 0 var(--day-color);
+  transform: translate(-2px, -2px);
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s;
+}
+.drag-ticket {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background: var(--surface);
+  border: 2px solid var(--edge);
+  border-left: 8px solid var(--orange);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+  transform: rotate(-3deg) scale(1.03);
+  cursor: grabbing;
+  white-space: nowrap;
+}
+@media (hover: none) {
+  .drag-handle {
+    opacity: 0.8;
+  }
+}
