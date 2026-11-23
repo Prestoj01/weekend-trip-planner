@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { fetchSuggestions } from '../lib/api';
+import { loadSuggestions } from '../lib/api';
+import { sampleSuggestions } from '../lib/sample';
 import { formatDay } from '../lib/dates';
 import { formatDistance } from '../lib/geo';
 import { Check, Plus, Star } from 'lucide-react';
@@ -27,7 +28,16 @@ interface Props {
 }
 
 /** "Things to do nearby", powered by OpenStreetMap data via the Overpass API. */
-export function Suggestions({ destination, days, addedTitles, targetDay, onTargetDayChange, onAdd, onLoaded, onFocus }: Props) {
+export function Suggestions({
+  destination,
+  days,
+  addedTitles,
+  targetDay,
+  onTargetDayChange,
+  onAdd,
+  onLoaded,
+  onFocus,
+}: Props) {
   const [tab, setTab] = useState<Category>('sight');
   const [cache, setCache] = useState<Partial<Record<Category, Load>>>({});
   const [attempt, setAttempt] = useState(0);
@@ -37,7 +47,7 @@ export function Suggestions({ destination, days, addedTitles, targetDay, onTarge
     if (current?.status === 'ready' || current?.status === 'error') return;
     const ctrl = new AbortController();
     setCache((c) => ({ ...c, [tab]: { status: 'loading' } }));
-    fetchSuggestions(tab, destination, ctrl.signal)
+    loadSuggestions(tab, destination, { signal: ctrl.signal, fallback: sampleSuggestions(tab, destination) })
       .then((items) => setCache((c) => ({ ...c, [tab]: { status: 'ready', items } })))
       .catch(() => !ctrl.signal.aborted && setCache((c) => ({ ...c, [tab]: { status: 'error' } })));
     return () => ctrl.abort();
@@ -125,7 +135,11 @@ export function Suggestions({ destination, days, addedTitles, targetDay, onTarge
                     onClick={() => onAdd(s)}
                     aria-label={added ? `${s.name} added` : `Add ${s.name}`}
                   >
-                    {added ? <Check size={15} strokeWidth={ICON_STROKE} aria-hidden /> : <Plus size={15} strokeWidth={ICON_STROKE} aria-hidden />}
+                    {added ? (
+                      <Check size={15} strokeWidth={ICON_STROKE} aria-hidden />
+                    ) : (
+                      <Plus size={15} strokeWidth={ICON_STROKE} aria-hidden />
+                    )}
                     {added ? 'Added' : 'Add'}
                   </button>
                 </li>

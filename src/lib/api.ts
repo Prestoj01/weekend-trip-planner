@@ -55,7 +55,13 @@ export async function fetchForecast(lat: number, lon: number, signal?: AbortSign
   }));
 }
 
-const OVERPASS_ENDPOINTS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
+const OVERPASS_ENDPOINTS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.private.coffee/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+];
+/** Give up on a slow mirror and try the next one. */
+const OVERPASS_TIMEOUT_MS = 12_000;
 
 const CATEGORY_QUERIES: Record<Exclude<ActivityCategory, 'other'>, { radiusM: number; filters: string[] }> = {
   sight: {
@@ -125,8 +131,10 @@ export function toSuggestions(
   return out.slice(0, limit);
 }
 
+export type SuggestionCategory = keyof typeof CATEGORY_QUERIES;
+
 export async function fetchSuggestions(
-  category: keyof typeof CATEGORY_QUERIES,
+  category: SuggestionCategory,
   origin: { lat: number; lon: number },
   signal?: AbortSignal,
 ): Promise<Suggestion[]> {
@@ -134,7 +142,12 @@ export async function fetchSuggestions(
   let lastError: unknown;
   for (const endpoint of OVERPASS_ENDPOINTS) {
     try {
-      const res = await fetch(endpoint, { method: 'POST', body, signal });
+      const timeout = AbortSignal.timeout(OVERPASS_TIMEOUT_MS);
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        body,
+        signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
+      });
       if (!res.ok) throw new Error(`Overpass responded ${res.status}`);
       const data = (await res.json()) as { elements: OverpassElement[] };
       return toSuggestions(data.elements, category, origin);
@@ -144,4 +157,54 @@ export async function fetchSuggestions(
     }
   }
   throw lastError instanceof Error ? lastError : new Error('Could not load suggestions');
+}
+
+const CACHE_PREFIX = 'wtp:places:v1:';
+export const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+const cacheKey = (category: SuggestionCategory, o: { lat: number; lon: number }) =>
+  `${CACHE_PREFIX}${category}:${o.lat.toFixed(3)},${o.lon.toFixed(3)}`;
+
+function readCache(key: string, now: number): Suggestion[] | null {
+  try {
+    const raw = typeof localStorage === 'undefined' ? null : localStorage.getItem(key);
+    if (!raw) return null;
+    const { at, items } = JSON.parse(raw) as { at: number; items: Suggestion[] };
+    return now - at < CACHE_TTL_MS && Array.isArray(items) ? items : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCache(key: string, items: Suggestion[], now: number) {
+  try {
+    localStorage.setItem(key, JSON.stringify({ at: now, items }));
+  } catch {
+    // Storage full or unavailable: caching is best-effort.
+  }
+}
+
+/**
+ * Suggestions with resilience: fresh cache → live Overpass (cached on success) →
+ * `fallback` (e.g. bundled places for the sample trip) → stale cache → error.
+ */
+export async function loadSuggestions(
+  category: SuggestionCategory,
+  origin: { lat: number; lon: number },
+  { signal, fallback, now = Date.now() }: { signal?: AbortSignal; fallback?: Suggestion[]; now?: number } = {},
+): Promise<Suggestion[]> {
+  const key = cacheKey(category, origin);
+  const cached = readCache(key, now);
+  if (cached) return cached;
+  try {
+    const items = await fetchSuggestions(category, origin, signal);
+    if (items.length > 0) writeCache(key, items, now);
+    return items;
+  } catch (err) {
+    if (signal?.aborted) throw err;
+    if (fallback?.length) return fallback;
+    const stale = readCache(key, 0);
+    if (stale) return stale;
+    throw err;
+  }
 }

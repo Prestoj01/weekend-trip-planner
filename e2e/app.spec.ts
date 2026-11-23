@@ -62,6 +62,13 @@ test.describe('sample trip', () => {
     await expect(page.locator('.day').first().getByText('Asheville Art Museum')).toBeVisible();
   });
 
+  test('sample trip still has suggestions when OpenStreetMap is down', async ({ page }) => {
+    await page.unroute(/overpass/);
+    await page.route(/overpass/, (r) => r.fulfill({ status: 503, body: 'down' }));
+    await page.getByRole('tab', { name: /Outdoors/ }).click();
+    await expect(page.locator('.suggestions').getByText('North Carolina Arboretum')).toBeVisible();
+  });
+
   test('shows the forecast and celebrates a fully packed bag', async ({ page }) => {
     await expect(page.locator('.forecast li')).toHaveCount(3);
     const boxes = page.locator('.checklist input[type=checkbox]');

@@ -1,4 +1,5 @@
-import type { Activity, Trip } from '../types';
+import type { Activity, Suggestion, Trip } from '../types';
+import { haversineKm } from './geo';
 import { addDays, nextWeekend } from './dates';
 import { defaultPacking } from './packing';
 import { newId } from './storage';
@@ -57,4 +58,50 @@ export function sampleTrip(): Trip {
     createdAt: Date.now(),
     updatedAt: Date.now(),
   };
+}
+
+const SAMPLE_CENTER = { lat: 35.6009, lon: -82.554 };
+
+type Place = [name: string, kind: string, lat: number, lon: number, notable?: boolean];
+const SAMPLE_PLACES: Record<'sight' | 'outdoors' | 'food', Place[]> = {
+  sight: [
+    ['Biltmore Estate', 'attraction', 35.5405, -82.5526, true],
+    ['Asheville Art Museum', 'museum', 35.5946, -82.5513, true],
+    ['Basilica of St. Lawrence', 'attraction', 35.5971, -82.5562, true],
+    ['River Arts District', 'attraction', 35.5873, -82.5672],
+    ['Thomas Wolfe Memorial', 'museum', 35.5976, -82.5507, true],
+    ['Grove Arcade', 'attraction', 35.5966, -82.5546],
+  ],
+  outdoors: [
+    ['Craggy Gardens', 'nature reserve', 35.6993, -82.3807, true],
+    ['North Carolina Arboretum', 'garden', 35.4999, -82.6094, true],
+    ['Pack Square Park', 'park', 35.5948, -82.5506],
+    ['French Broad River Park', 'park', 35.5617, -82.5838],
+    ['Mount Pisgah', 'peak', 35.4085, -82.7488, true],
+  ],
+  food: [
+    ['Curate', 'spanish', 35.5937, -82.5509],
+    ['Early Girl Eatery', 'regional', 35.5954, -82.5547],
+    ['French Broad Chocolate Lounge', 'cafe', 35.5939, -82.5511],
+    ['Wicked Weed Brewing', 'pub', 35.5918, -82.5517],
+    ['Biscuit Head', 'breakfast', 35.5868, -82.5651],
+  ],
+};
+
+/** Offline-safe suggestions so the sample trip always has things to add, even if OSM is down. */
+export function sampleSuggestions(
+  category: 'sight' | 'outdoors' | 'food',
+  origin: { lat: number; lon: number },
+): Suggestion[] | undefined {
+  if (haversineKm(origin.lat, origin.lon, SAMPLE_CENTER.lat, SAMPLE_CENTER.lon) > 2) return undefined;
+  return SAMPLE_PLACES[category].map(([name, kind, lat, lon, notable = false], i) => ({
+    id: `sample/${category}/${i}`,
+    name,
+    kind,
+    category,
+    lat,
+    lon,
+    notable,
+    distanceKm: haversineKm(origin.lat, origin.lon, lat, lon),
+  }));
 }
