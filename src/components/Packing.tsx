@@ -5,16 +5,19 @@ import { X } from 'lucide-react';
 import type { DailyWeather, PackingItem } from '../types';
 import { Confetti } from './Confetti';
 import { ICON_STROKE } from './icons';
+import { useToast } from './Toast';
 
 interface Props {
   items: PackingItem[];
   forecast: DailyWeather[];
   onChange?: (items: PackingItem[]) => void;
+  onRestore?: (item: PackingItem, index: number) => void;
 }
 
-export function Packing({ items, forecast, onChange }: Props) {
+export function Packing({ items, forecast, onChange, onRestore }: Props) {
   const [draft, setDraft] = useState('');
   const [celebrations, setCelebrations] = useState(0);
+  const toast = useToast();
   const have = new Set(items.map((i) => i.label.toLowerCase()));
   const suggested = weatherSuggestions(forecast).filter((s) => !have.has(s.toLowerCase()));
   const packed = items.filter((i) => i.packed).length;
@@ -80,7 +83,12 @@ export function Packing({ items, forecast, onChange }: Props) {
               <button
                 className="icon-btn"
                 aria-label={`Remove ${item.label}`}
-                onClick={() => onChange(items.filter((i) => i.id !== item.id))}
+                onClick={() => {
+                  const index = items.indexOf(item);
+                  onChange(items.filter((i) => i.id !== item.id));
+                  if (onRestore)
+                    toast(`Removed “${item.label}”`, { action: { label: 'Undo', run: () => onRestore(item, index) } });
+                }}
               >
                 <X size={15} strokeWidth={ICON_STROKE} aria-hidden />
               </button>

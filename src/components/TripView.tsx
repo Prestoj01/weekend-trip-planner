@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useForecast, useTempUnit } from '../hooks';
 import { useOffscreenPause } from '../hooks/useOffscreenPause';
 import { addDays, daysUntil, eachDay, formatRange, MAX_TRIP_DAYS } from '../lib/dates';
@@ -13,7 +13,6 @@ import { Itinerary } from './Itinerary';
 import { Packing } from './Packing';
 import { Suggestions } from './Suggestions';
 import { ICON_STROKE, WeatherIcon } from './icons';
-
 
 // Leaflet is the heaviest dependency; load it only when a trip page is shown.
 const TripMap = lazy(() => import('./TripMap').then((m) => ({ default: m.TripMap })));
@@ -37,7 +36,13 @@ export function TripView({ trip, onChange, actions }: Props) {
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const { ref: weatherRef } = useOffscreenPause<HTMLElement>();
 
-  const update = (patch: Partial<Trip>) => onChange?.({ ...trip, ...patch });
+  // Delayed callbacks (e.g. Undo in a toast) must apply to the latest trip, not the one they closed over.
+  const latest = useRef(trip);
+  useEffect(() => {
+    latest.current = trip;
+  });
+  const update = (patch: Partial<Trip> | ((t: Trip) => Partial<Trip>)) =>
+    onChange?.({ ...latest.current, ...(typeof patch === 'function' ? patch(latest.current) : patch) });
   const focusOn = useCallback((lat: number, lon: number) => {
     setFocus({ lat, lon, key: Date.now() });
     document.querySelector('.map-wrap')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -120,7 +125,12 @@ export function TripView({ trip, onChange, actions }: Props) {
           <h2>Weather in {trip.destination.name}</h2>
           <div className="unit-toggle" role="group" aria-label="Temperature unit">
             {(['F', 'C'] as const).map((u) => (
-              <button key={u} aria-pressed={unit === u} className={unit === u ? 'active' : ''} onClick={() => setUnit(u)}>
+              <button
+                key={u}
+                aria-pressed={unit === u}
+                className={unit === u ? 'active' : ''}
+                onClick={() => setUnit(u)}
+              >
                 °{u}
               </button>
             ))}
@@ -154,7 +164,8 @@ export function TripView({ trip, onChange, actions }: Props) {
                   <WeatherIcon kind={kind} size={32} className="wx-icon" />
                   <span className="wx-label">{label}</span>
                   <span>
-                    <strong>{formatTemp(d.maxC, unit)}</strong> <span className="muted">{formatTemp(d.minC, unit)}</span>
+                    <strong>{formatTemp(d.maxC, unit)}</strong>{' '}
+                    <span className="muted">{formatTemp(d.minC, unit)}</span>
                   </span>
                   <span className="muted small with-icon">
                     <Droplets size={13} strokeWidth={ICON_STROKE} aria-label="Chance of rain" />
@@ -176,6 +187,7 @@ export function TripView({ trip, onChange, actions }: Props) {
             forecast={forecast}
             unit={unit}
             onChange={onChange && ((activities) => update({ activities }))}
+            onRestore={(a) => update((t) => ({ activities: [...t.activities, a] }))}
             onFocus={(a) => a.location && focusOn(a.location.lat, a.location.lon)}
           />
         </div>
@@ -206,7 +218,14 @@ export function TripView({ trip, onChange, actions }: Props) {
       </div>
 
       <div className="two-up">
-        <Packing items={trip.packing} forecast={forecast} onChange={onChange && ((packing) => update({ packing }))} />
+        <Packing
+          items={trip.packing}
+          forecast={forecast}
+          onChange={onChange && ((packing) => update({ packing }))}
+          onRestore={(item, index) =>
+            update((t) => ({ packing: [...t.packing.slice(0, index), item, ...t.packing.slice(index)] }))
+          }
+        />
         <Budget trip={trip} />
       </div>
     </main>

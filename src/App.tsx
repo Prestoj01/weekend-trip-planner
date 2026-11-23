@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
 import { Home } from './components/Home';
+import { useToast } from './components/Toast';
 import { TripView } from './components/TripView';
 import { navigate, useHashRoute, useTrips } from './hooks';
 import { buildIcs, downloadFile } from './lib/ics';
@@ -10,13 +10,20 @@ import type { Trip } from './types';
 export default function App() {
   const route = useHashRoute();
   const { trips, upsert, remove } = useTrips();
-  const [toast, setToast] = useState<string | null>(null);
+  const toast = useToast();
 
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 2600);
-    return () => clearTimeout(t);
-  }, [toast]);
+  const deleteTrip = (trip: Trip, { returnTo }: { returnTo?: string } = {}) => {
+    remove(trip.id);
+    toast('Trip deleted', {
+      action: {
+        label: 'Undo',
+        run: () => {
+          upsert(trip);
+          if (returnTo) navigate(returnTo);
+        },
+      },
+    });
+  };
 
   const [page, param] = route;
   let content: React.ReactNode;
@@ -31,11 +38,10 @@ export default function App() {
         actions={
           <TripActions
             trip={trip}
-            onToast={setToast}
+            onToast={toast}
             onDelete={() => {
-              remove(trip.id);
               navigate('/');
-              setToast('Trip deleted');
+              deleteTrip(trip, { returnTo: `/trip/${trip.id}` });
             }}
           />
         }
@@ -55,7 +61,7 @@ export default function App() {
               const copy: Trip = { ...shared, id: newId(), createdAt: Date.now() };
               upsert(copy);
               navigate(`/trip/${copy.id}`);
-              setToast('Saved to your trips');
+              toast('Saved to your trips');
             }}
           >
             Save a copy to edit
@@ -67,7 +73,16 @@ export default function App() {
       <NotFound message="This share link looks broken or incomplete." />
     );
   } else {
-    content = <Home trips={trips} onCreate={upsert} onDelete={remove} />;
+    content = (
+      <Home
+        trips={trips}
+        onCreate={upsert}
+        onDelete={(id) => {
+          const trip = trips.find((t) => t.id === id);
+          if (trip) deleteTrip(trip);
+        }}
+      />
+    );
   }
 
   return (
@@ -92,9 +107,6 @@ export default function App() {
         Weather by <a href="https://open-meteo.com/">Open-Meteo</a> · Maps &amp; places by{' '}
         <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · Your trips stay in your browser.
       </footer>
-      <div className={`toast ${toast ? 'show' : ''}`} role="status" aria-live="polite">
-        {toast}
-      </div>
     </>
   );
 }
@@ -118,7 +130,11 @@ function TripActions({ trip, onToast, onDelete }: { trip: Trip; onToast: (m: str
     }
   };
 
-  const slug = trip.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'trip';
+  const slug =
+    trip.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '') || 'trip';
 
   return (
     <>
@@ -138,7 +154,7 @@ function TripActions({ trip, onToast, onDelete }: { trip: Trip; onToast: (m: str
       <button className="btn ghost small" onClick={() => window.print()}>
         Print
       </button>
-      <button className="btn danger small" onClick={() => confirm(`Delete "${trip.name}"?`) && onDelete()}>
+      <button className="btn danger small" onClick={onDelete}>
         Delete
       </button>
     </>

@@ -2069,3 +2069,25 @@ main {
     height: 300px;
   }
 }
+
+.toast.has-action {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+.toast-action {
+  font: inherit;
+  color: var(--ink);
+  background: #fff9ef;
+  border: 2px solid var(--edge);
+  border-radius: var(--radius-sm);
+  padding: 0 var(--space-3);
+  cursor: pointer;
+  text-shadow: none;
+  box-shadow: var(--shadow-sm);
+}
+.toast-action:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}

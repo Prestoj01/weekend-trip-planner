@@ -7,6 +7,7 @@ import type { Activity, DailyWeather, TempUnit } from '../types';
 import { Pencil } from 'lucide-react';
 import { CATEGORY_LABELS } from '../lib/labels';
 import { ActivityForm } from './ActivityForm';
+import { useToast } from './Toast';
 import { CategoryIcon, ICON_STROKE, WeatherIcon } from './icons';
 
 interface Props {
@@ -19,14 +20,27 @@ interface Props {
   onChange?: (activities: Activity[]) => void;
   /** Omit to render map pins as static labels (e.g. in a preview). */
   onFocus?: (a: Activity) => void;
+  /** Put a removed activity back (Undo). */
+  onRestore?: (a: Activity) => void;
   /** An activity added elsewhere (e.g. from suggestions) to flash once. */
   highlightId?: string | null;
 }
 
 type Editing = { mode: 'new'; date: string } | { mode: 'edit'; id: string } | null;
 
-export function Itinerary({ days, activities, forecast, unit, onChange, onFocus, highlightId , dayOffset = 0 }: Props) {
+export function Itinerary({
+  days,
+  activities,
+  forecast,
+  unit,
+  onChange,
+  onFocus,
+  highlightId,
+  onRestore,
+  dayOffset = 0,
+}: Props) {
   const [editing, setEditing] = useState<Editing>(null);
+  const toast = useToast();
   const [touchedId, setTouchedId] = useState<string | null>(null);
 
   const add = (a: Omit<Activity, 'id'>) => {
@@ -41,8 +55,11 @@ export function Itinerary({ days, activities, forecast, unit, onChange, onFocus,
     setEditing(null);
   };
   const remove = (id: string) => {
+    const removed = activities.find((x) => x.id === id);
     onChange?.(activities.filter((x) => x.id !== id));
     setEditing(null);
+    if (removed && onRestore)
+      toast(`Removed “${removed.title}”`, { action: { label: 'Undo', run: () => onRestore(removed) } });
   };
 
   return (

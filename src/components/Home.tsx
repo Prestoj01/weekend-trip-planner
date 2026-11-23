@@ -192,7 +192,7 @@ function TripCard({ trip: t, index, onDelete }: { trip: Trip; index: number; onD
         className="icon-btn"
         aria-label={`Delete ${t.name}`}
         title="Delete trip"
-        onClick={() => confirm(`Delete "${t.name}"?`) && onDelete(t.id)}
+        onClick={() => onDelete(t.id)}
       >
         <X size={16} strokeWidth={ICON_STROKE} aria-hidden />
       </button>

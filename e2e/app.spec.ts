@@ -36,6 +36,24 @@ test.describe('sample trip', () => {
     await expect(page.getByText('$697')).toBeVisible(); // 685 + 12
   });
 
+  test('deleting an activity can be undone', async ({ page }) => {
+    const friday = page.locator('.day').first();
+    await friday.getByRole('button', { name: 'Edit Check in downtown' }).click();
+    await friday.getByRole('button', { name: 'Delete' }).click();
+    await expect(friday.getByText('Check in downtown')).toHaveCount(0);
+    await page.getByRole('status').getByRole('button', { name: 'Undo' }).click();
+    await expect(friday.getByText('Check in downtown')).toBeVisible();
+  });
+
+  test('deleting a trip can be undone', async ({ page }) => {
+    await page.getByRole('button', { name: 'Delete' }).click();
+    await expect(page).toHaveURL(/#\/$/);
+    await expect(page.getByText('Blue Ridge Getaway')).toHaveCount(0);
+    await page.getByRole('status').getByRole('button', { name: 'Undo' }).click();
+    await expect(page).toHaveURL(/#\/trip\//);
+    await expect(page.getByRole('textbox', { name: 'Trip name' })).toHaveValue('Blue Ridge Getaway');
+  });
+
   test('adds a nearby suggestion to a day', async ({ page }) => {
     const suggestions = page.locator('.suggestions');
     await expect(suggestions.getByText('Asheville Art Museum')).toBeVisible();
