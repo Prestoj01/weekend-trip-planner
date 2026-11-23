@@ -71,6 +71,7 @@ test.describe('sample trip', () => {
 
   test('shows the forecast and celebrates a fully packed bag', async ({ page }) => {
     await expect(page.locator('.forecast li')).toHaveCount(3);
+    await expect(page.locator('.forecast li').first().getByTitle('Sunrise')).toContainText('7:02');
     const boxes = page.locator('.checklist input[type=checkbox]');
     const n = await boxes.count();
     for (let i = 0; i < n; i++) await boxes.nth(i).check();

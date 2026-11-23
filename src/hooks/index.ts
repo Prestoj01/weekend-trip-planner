@@ -54,7 +54,7 @@ export const navigate = (path: string) => {
 type ForecastState =
   | { status: 'loading' }
   | { status: 'error'; message: string }
-  | { status: 'ready'; days: DailyWeather[] };
+  | { status: 'ready'; days: DailyWeather[]; elevation: number };
 
 export function useForecast(lat: number, lon: number): ForecastState {
   const key = `${lat},${lon}`;
@@ -63,7 +63,7 @@ export function useForecast(lat: number, lon: number): ForecastState {
   useEffect(() => {
     const ctrl = new AbortController();
     fetchForecast(lat, lon, ctrl.signal)
-      .then((days) => setResult({ key, state: { status: 'ready', days } }))
+      .then(({ days, elevation }) => setResult({ key, state: { status: 'ready', days, elevation } }))
       .catch((err: unknown) => {
         if (ctrl.signal.aborted) return;
         setResult({ key, state: { status: 'error', message: err instanceof Error ? err.message : 'Failed' } });

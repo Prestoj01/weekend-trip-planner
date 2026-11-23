@@ -49,6 +49,15 @@ export interface DailyWeather {
   maxC: number;
   minC: number;
   precipChance: number;
+  /** Local time "HH:MM" at the destination. */
+  sunrise?: string;
+  sunset?: string;
+}
+
+export interface Forecast {
+  days: DailyWeather[];
+  /** Metres above sea level at the forecast point. */
+  elevation: number;
 }
 
 export interface Suggestion {

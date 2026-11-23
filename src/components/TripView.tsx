@@ -1,12 +1,12 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useForecast, useTempUnit } from '../hooks';
 import { useOffscreenPause } from '../hooks/useOffscreenPause';
-import { addDays, daysUntil, eachDay, formatRange, MAX_TRIP_DAYS } from '../lib/dates';
+import { addDays, daysUntil, eachDay, formatRange, formatTime, MAX_TRIP_DAYS } from '../lib/dates';
 import { newId } from '../lib/storage';
 import { rescheduleTrip } from '../lib/trip';
 import { placeLabel } from '../lib/labels';
 import { describeWeather, formatTemp } from '../lib/weather';
-import { CalendarDays, Droplets, MapPin, Users } from 'lucide-react';
+import { CalendarDays, Droplets, MapPin, Sunrise, Sunset, Users } from 'lucide-react';
 import type { Activity, Suggestion, Trip } from '../types';
 import { Budget } from './Budget';
 import { Itinerary } from './Itinerary';
@@ -171,6 +171,18 @@ export function TripView({ trip, onChange, actions }: Props) {
                     <Droplets size={13} strokeWidth={ICON_STROKE} aria-label="Chance of rain" />
                     {d.precipChance}%
                   </span>
+                  {d.sunrise && d.sunset && (
+                    <span className="sun-times small">
+                      <span className="with-icon" title="Sunrise">
+                        <Sunrise size={13} strokeWidth={ICON_STROKE} aria-label="Sunrise" />
+                        {formatTime(d.sunrise)}
+                      </span>
+                      <span className="with-icon" title="Sunset">
+                        <Sunset size={13} strokeWidth={ICON_STROKE} aria-label="Sunset" />
+                        {formatTime(d.sunset)}
+                      </span>
+                    </span>
+                  )}
                 </li>
               );
             })}

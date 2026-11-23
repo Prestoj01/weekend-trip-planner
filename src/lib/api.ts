@@ -3,7 +3,7 @@
  *  - Open-Meteo geocoding + forecast  (https://open-meteo.com)
  *  - OpenStreetMap Overpass           (https://wiki.openstreetmap.org/wiki/Overpass_API)
  */
-import type { ActivityCategory, DailyWeather, Place, Suggestion } from '../types';
+import type { ActivityCategory, Forecast, Place, Suggestion } from '../types';
 import { haversineKm } from './geo';
 
 export async function searchPlaces(query: string, signal?: AbortSignal): Promise<Place[]> {
@@ -26,33 +26,42 @@ export async function searchPlaces(query: string, signal?: AbortSignal): Promise
 }
 
 /** Up to 16 days of daily forecast in the destination's local timezone. */
-export async function fetchForecast(lat: number, lon: number, signal?: AbortSignal): Promise<DailyWeather[]> {
+export async function fetchForecast(lat: number, lon: number, signal?: AbortSignal): Promise<Forecast> {
   const url = new URL('https://api.open-meteo.com/v1/forecast');
   url.search = new URLSearchParams({
     latitude: lat.toFixed(4),
     longitude: lon.toFixed(4),
-    daily: 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max',
+    daily: 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset',
     timezone: 'auto',
     forecast_days: '16',
   }).toString();
   const res = await fetch(url, { signal });
   if (!res.ok) throw new Error(`Forecast failed (${res.status})`);
-  const { daily } = (await res.json()) as {
+  const { daily, elevation } = (await res.json()) as {
+    elevation?: number;
     daily: {
       time: string[];
       weather_code: number[];
       temperature_2m_max: number[];
       temperature_2m_min: number[];
       precipitation_probability_max: (number | null)[];
+      sunrise?: string[];
+      sunset?: string[];
     };
   };
-  return daily.time.map((date, i) => ({
-    date,
-    code: daily.weather_code[i],
-    maxC: daily.temperature_2m_max[i],
-    minC: daily.temperature_2m_min[i],
-    precipChance: daily.precipitation_probability_max[i] ?? 0,
-  }));
+  const clock = (iso?: string) => iso?.split('T')[1]?.slice(0, 5);
+  return {
+    elevation: elevation ?? 0,
+    days: daily.time.map((date, i) => ({
+      date,
+      code: daily.weather_code[i],
+      maxC: daily.temperature_2m_max[i],
+      minC: daily.temperature_2m_min[i],
+      precipChance: daily.precipitation_probability_max[i] ?? 0,
+      sunrise: clock(daily.sunrise?.[i]),
+      sunset: clock(daily.sunset?.[i]),
+    })),
+  };
 }
 
 const OVERPASS_ENDPOINTS = [
