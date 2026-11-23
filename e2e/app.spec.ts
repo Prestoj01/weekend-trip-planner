@@ -73,15 +73,19 @@ test.describe('sample trip', () => {
   test('moves a stop with the keyboard', async ({ page }, info) => {
     test.skip(info.project.name !== 'desktop', 'keyboard');
     const saturday = page.locator('.day').nth(1);
-    await saturday.getByRole('button', { name: 'Move Brewery crawl' }).focus();
+    const handle = saturday.getByRole('button', { name: 'Move Brewery crawl' });
+    await handle.scrollIntoViewIfNeeded();
+    await handle.focus();
     await page.keyboard.press('Space');
-    await page.keyboard.press('ArrowUp');
-    await page.waitForTimeout(150);
-    await page.keyboard.press('ArrowUp');
-    await page.waitForTimeout(150);
+    await expect(page.locator('.activity.is-dragging')).toHaveCount(1);
+    // Wait for each move to settle; slower CI machines need it.
+    for (let i = 0; i < 2; i++) {
+      await page.keyboard.press('ArrowUp');
+      await page.waitForTimeout(400);
+    }
     await page.keyboard.press('Space');
-    const titles = await saturday.locator('.activity strong').allInnerTexts();
-    expect(titles[0]).toBe('Brewery crawl');
+    await expect(page.locator('.activity.is-dragging')).toHaveCount(0);
+    await expect(saturday.locator('.activity strong').first()).toHaveText('Brewery crawl');
     await expect(saturday.locator('.activity').first()).toContainText('9:00 AM');
   });
 
