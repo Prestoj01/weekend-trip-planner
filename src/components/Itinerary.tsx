@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { formatDay, formatTime } from '../lib/dates';
 import { newId } from '../lib/storage';
 import { DAY_COLORS, formatMoney, sortActivities } from '../lib/trip';
 import { describeWeather, formatTemp } from '../lib/weather';
 import type { Activity, DailyWeather, TempUnit } from '../types';
-import { Pencil } from 'lucide-react';
+import { Car, Footprints, Pencil } from 'lucide-react';
+import { formatDistance } from '../lib/geo';
+import { estimateLeg, formatDuration } from '../lib/travel';
 import { CATEGORY_LABELS } from '../lib/labels';
 import { ActivityForm } from './ActivityForm';
 import { useToast } from './Toast';
@@ -97,62 +99,80 @@ export function Itinerary({
               {items.length === 0 && editing?.mode !== 'new' && <p className="empty">Nothing planned yet.</p>}
 
               <ol className="activities">
-                {items.map((a) => {
+                {items.map((a, i) => {
                   if (a.location) pin += 1;
+                  const prev = items[i - 1];
+                  const leg = prev?.location && a.location ? estimateLeg(prev.location, a.location) : null;
+                  const legRow = leg && (
+                    <li className="leg" key={`leg-${a.id}`}>
+                      {leg.mode === 'walk' ? (
+                        <Footprints size={14} strokeWidth={ICON_STROKE} aria-hidden />
+                      ) : (
+                        <Car size={14} strokeWidth={ICON_STROKE} aria-hidden />
+                      )}
+                      <span>
+                        ~{formatDuration(leg.minutes)} {leg.mode === 'walk' ? 'walk' : 'drive'} ·{' '}
+                        {formatDistance(leg.km)}
+                      </span>
+                    </li>
+                  );
                   if (editing?.mode === 'edit' && editing.id === a.id) {
                     return (
-                      <li key={a.id}>
-                        <ActivityForm
-                          initial={a}
-                          date={date}
-                          days={days}
-                          onSave={(v) => save(a.id, v)}
-                          onCancel={() => setEditing(null)}
-                          onDelete={() => remove(a.id)}
-                        />
-                      </li>
+                      <Fragment key={a.id}>
+                        {legRow}
+                        <li>
+                          <ActivityForm
+                            initial={a}
+                            date={date}
+                            days={days}
+                            onSave={(v) => save(a.id, v)}
+                            onCancel={() => setEditing(null)}
+                            onDelete={() => remove(a.id)}
+                          />
+                        </li>
+                      </Fragment>
                     );
                   }
                   return (
-                    <li
-                      key={a.id}
-                      className={a.id === touchedId || a.id === highlightId ? 'activity just-changed' : 'activity'}
-                    >
-                      <span className="activity-time">{a.time && formatTime(a.time)}</span>
-                      <div className="activity-body">
-                        <div className="activity-title">
-                          <CategoryIcon
-                            category={a.category}
-                            className="cat-icon"
-                            aria-label={CATEGORY_LABELS[a.category]}
-                          />
-                          <strong>{a.title}</strong>
-                          {a.location && !onFocus && <span className="pin">{pin}</span>}
-                          {a.location && onFocus && (
-                            <button
-                              className="pin"
-                              onClick={() => onFocus(a)}
-                              title="Show on map"
-                              aria-label={`Show ${a.title} on map`}
-                            >
-                              {pin}
-                            </button>
-                          )}
+                    <Fragment key={a.id}>
+                      {legRow}
+                      <li className={a.id === touchedId || a.id === highlightId ? 'activity just-changed' : 'activity'}>
+                        <span className="activity-time">{a.time && formatTime(a.time)}</span>
+                        <div className="activity-body">
+                          <div className="activity-title">
+                            <CategoryIcon
+                              category={a.category}
+                              className="cat-icon"
+                              aria-label={CATEGORY_LABELS[a.category]}
+                            />
+                            <strong>{a.title}</strong>
+                            {a.location && !onFocus && <span className="pin">{pin}</span>}
+                            {a.location && onFocus && (
+                              <button
+                                className="pin"
+                                onClick={() => onFocus(a)}
+                                title="Show on map"
+                                aria-label={`Show ${a.title} on map`}
+                              >
+                                {pin}
+                              </button>
+                            )}
+                          </div>
+                          {a.notes && <p className="activity-notes">{a.notes}</p>}
                         </div>
-                        {a.notes && <p className="activity-notes">{a.notes}</p>}
-                      </div>
-                      {a.cost !== undefined && <span className="activity-cost">{formatMoney(a.cost)}</span>}
-                      {onChange && (
-                        <button
-                          className="icon-btn"
-                          onClick={() => setEditing({ mode: 'edit', id: a.id })}
-                          aria-label={`Edit ${a.title}`}
-                          title="Edit"
-                        >
-                          <Pencil size={15} strokeWidth={ICON_STROKE} aria-hidden />
-                        </button>
-                      )}
-                    </li>
+                        {a.cost !== undefined && <span className="activity-cost">{formatMoney(a.cost)}</span>}
+                        {onChange && (
+                          <button
+                            className="icon-btn"
+                            onClick={() => setEditing({ mode: 'edit', id: a.id })}
+                            aria-label={`Edit ${a.title}`}
+                            title="Edit"
+                          >
+                            <Pencil size={15} strokeWidth={ICON_STROKE} aria-hidden />
+                          </button>
+                        )}
+                      </li>
+                    </Fragment>
                   );
                 })}
               </ol>
