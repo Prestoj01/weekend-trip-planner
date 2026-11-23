@@ -10,6 +10,8 @@ export default defineConfig({
   use: {
     baseURL: `http://127.0.0.1:${PORT}/weekend-trip-planner/`,
     trace: 'retain-on-failure',
+    // The PWA service worker would bypass request mocks; offline.spec.ts opts back in.
+    serviceWorkers: 'block',
   },
   projects: [
     { name: 'desktop', use: { ...devices['Desktop Chrome'], viewport: { width: 1360, height: 900 } } },
