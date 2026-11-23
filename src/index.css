@@ -2054,3 +2054,18 @@ main {
 .wx-mostly-clear .wx-fx::before {
   opacity: 0.6;
 }
+
+/* Pause decorative animation while it's scrolled out of view (saves battery). */
+.offscreen,
+.offscreen * {
+  animation-play-state: paused !important;
+}
+.map-loading {
+  height: 380px;
+  border-radius: var(--radius-lg);
+}
+@media (max-width: 900px) {
+  .map-loading {
+    height: 300px;
+  }
+}

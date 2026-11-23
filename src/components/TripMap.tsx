@@ -1,6 +1,7 @@
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Fragment, useEffect, useMemo, useRef } from 'react';
+import { useOffscreenPause } from '../hooks/useOffscreenPause';
 import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from 'react-leaflet';
 import { formatTime } from '../lib/dates';
 import { DAY_COLORS, sortActivities } from '../lib/trip';
@@ -103,6 +104,7 @@ function FlyTo({ focus }: { focus: Props['focus'] }) {
 }
 
 export function TripMap({ destination, days, activities, suggestions, focus, onAddSuggestion }: Props) {
+  const { ref: wrapRef } = useOffscreenPause<HTMLDivElement>();
   const pins = useMemo(
     () =>
       days.flatMap((date, i) =>
@@ -137,7 +139,7 @@ export function TripMap({ destination, days, activities, suggestions, focus, onA
   ];
 
   return (
-    <div className="map-wrap">
+    <div className="map-wrap" ref={wrapRef}>
       <MapContainer center={[destination.lat, destination.lon]} zoom={12} scrollWheelZoom={false} className="map">
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

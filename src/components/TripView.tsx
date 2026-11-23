@@ -1,5 +1,6 @@
-import { useCallback, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useMemo, useState } from 'react';
 import { useForecast, useTempUnit } from '../hooks';
+import { useOffscreenPause } from '../hooks/useOffscreenPause';
 import { addDays, daysUntil, eachDay, formatRange, MAX_TRIP_DAYS } from '../lib/dates';
 import { newId } from '../lib/storage';
 import { rescheduleTrip } from '../lib/trip';
@@ -11,8 +12,11 @@ import { Budget } from './Budget';
 import { Itinerary } from './Itinerary';
 import { Packing } from './Packing';
 import { Suggestions } from './Suggestions';
-import { TripMap } from './TripMap';
 import { ICON_STROKE, WeatherIcon } from './icons';
+
+
+// Leaflet is the heaviest dependency; load it only when a trip page is shown.
+const TripMap = lazy(() => import('./TripMap').then((m) => ({ default: m.TripMap })));
 
 interface Props {
   trip: Trip;
@@ -31,6 +35,7 @@ export function TripView({ trip, onChange, actions }: Props) {
   const [targetDay, setTargetDay] = useState(days[0]);
   const [editingDates, setEditingDates] = useState(false);
   const [highlightId, setHighlightId] = useState<string | null>(null);
+  const { ref: weatherRef } = useOffscreenPause<HTMLElement>();
 
   const update = (patch: Partial<Trip>) => onChange?.({ ...trip, ...patch });
   const focusOn = useCallback((lat: number, lon: number) => {
@@ -110,7 +115,7 @@ export function TripView({ trip, onChange, actions }: Props) {
         {actions && <div className="trip-actions">{actions}</div>}
       </header>
 
-      <section className="card weather" aria-live="polite">
+      <section className="card weather" aria-live="polite" ref={weatherRef}>
         <header className="section-head">
           <h2>Weather in {trip.destination.name}</h2>
           <div className="unit-toggle" role="group" aria-label="Temperature unit">
@@ -175,14 +180,16 @@ export function TripView({ trip, onChange, actions }: Props) {
           />
         </div>
         <aside className="col-side">
-          <TripMap
-            destination={trip.destination}
-            days={days}
-            activities={trip.activities}
-            suggestions={onChange ? suggestions : []}
-            focus={focus}
-            onAddSuggestion={onChange && addSuggestion}
-          />
+          <Suspense fallback={<div className="map-wrap map-loading skeleton" aria-label="Loading map" />}>
+            <TripMap
+              destination={trip.destination}
+              days={days}
+              activities={trip.activities}
+              suggestions={onChange ? suggestions : []}
+              focus={focus}
+              onAddSuggestion={onChange && addSuggestion}
+            />
+          </Suspense>
           {onChange && (
             <Suggestions
               destination={trip.destination}

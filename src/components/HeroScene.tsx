@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
+import { useOffscreenPause } from '../hooks/useOffscreenPause';
 
 /**
  * Animated travel-poster landscape. Layers shift with the pointer and scroll (parallax by
@@ -6,7 +7,7 @@ import { useEffect, useRef } from 'react';
  * prefers-reduced-motion.
  */
 export function HeroScene({ children }: { children: React.ReactNode }) {
-  const ref = useRef<HTMLDivElement>(null);
+  const { ref, hidden } = useOffscreenPause<HTMLDivElement>();
 
   useEffect(() => {
     const el = ref.current;
@@ -17,11 +18,12 @@ export function HeroScene({ children }: { children: React.ReactNode }) {
 
     // Ease towards the pointer so the scene glides instead of snapping.
     const tick = () => {
+      frame = requestAnimationFrame(tick);
+      if (hidden.current) return;
       current = { x: current.x + (target.x - current.x) * 0.08, y: current.y + (target.y - current.y) * 0.08 };
       el.style.setProperty('--px', current.x.toFixed(4));
       el.style.setProperty('--py', current.y.toFixed(4));
       el.style.setProperty('--scroll', String(Math.min(window.scrollY, 600)));
-      frame = requestAnimationFrame(tick);
     };
     const onMove = (e: PointerEvent) => {
       const r = el.getBoundingClientRect();
@@ -37,7 +39,7 @@ export function HeroScene({ children }: { children: React.ReactNode }) {
       el.removeEventListener('pointermove', onMove);
       el.removeEventListener('pointerleave', onLeave);
     };
-  }, []);
+  }, [ref, hidden]);
 
   return (
     <div className="poster" ref={ref}>
