@@ -53,7 +53,7 @@
   --danger: #a8201a;
   --shadow: 4px 4px 0 var(--edge);
   --shadow-sm: 2px 2px 0 var(--edge);
-  --grain-opacity: 0.35;
+  --grain-opacity: 0.22;
 
   font-family: var(--font-body);
   color: var(--ink);
@@ -77,7 +77,7 @@
     --brand-soft: #4a2f45;
     --accent: #f3a683;
     --danger: #ff8a80;
-    --grain-opacity: 0.18;
+    --grain-opacity: 0.1;
     color-scheme: dark;
   }
 }
@@ -792,9 +792,11 @@ main {
 }
 .trip-title h1,
 .title-input {
+  font-family: var(--font-display);
   font-size: var(--text-2xl);
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  color: var(--ink);
 }
 .title-input {
   border: 1px solid transparent;
@@ -1363,7 +1365,11 @@ main {
   display: flex;
   gap: var(--space-2);
   align-items: center;
+  font-family: var(--font-body);
+  font-size: var(--text-md);
   font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
   cursor: pointer;
 }
 .checklist input {
@@ -2025,4 +2031,26 @@ main {
 /* Tinted weather tiles: keep text at full ink so it stays above 4.5:1 on every tint. */
 .forecast .wx .muted {
   color: var(--ink);
+}
+
+/* Dusk: weather overlays are dimmer so tile text stays readable. */
+@media (prefers-color-scheme: dark) {
+  .wx-snow .wx-fx::before,
+  .wx-snow .wx-fx::after {
+    opacity: 0.35;
+  }
+  .wx-clear .wx-fx::before,
+  .wx-mostly-clear .wx-fx::before {
+    opacity: 0.35;
+  }
+  .wx-partly-cloudy .wx-fx::after,
+  .wx-overcast .wx-fx::after,
+  .wx-mostly-clear .wx-fx::after {
+    opacity: 0.45;
+  }
+}
+/* Light mode: soften sun rays behind text */
+.wx-clear .wx-fx::before,
+.wx-mostly-clear .wx-fx::before {
+  opacity: 0.6;
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { navigate } from '../hooks';
 import { useTilt } from '../hooks/useTilt';
 import { addDays, daysUntil, eachDay, formatRange, MAX_TRIP_DAYS, nextWeekend } from '../lib/dates';
@@ -67,15 +67,19 @@ export function Home({ trips, onCreate, onDelete }: Props) {
             <span className="sr-only">Your next weekend, planned on one ticket</span>
             <span aria-hidden>
               {['Your', 'next', 'weekend,'].map((w, i) => (
-                <span key={w} className="word" style={{ animationDelay: `${0.15 + i * 0.09}s` }}>
-                  {w}{' '}
-                </span>
+                <Fragment key={w}>
+                  <span className="word" style={{ animationDelay: `${0.15 + i * 0.09}s` }}>
+                    {w}
+                  </span>{' '}
+                </Fragment>
               ))}
               <br />
               {['planned', 'on', 'one', 'ticket'].map((w, i) => (
-                <span key={w} className="word pop" style={{ animationDelay: `${0.45 + i * 0.09}s` }}>
-                  {w}{' '}
-                </span>
+                <Fragment key={w}>
+                  <span className="word pop" style={{ animationDelay: `${0.45 + i * 0.09}s` }}>
+                    {w}
+                  </span>{' '}
+                </Fragment>
               ))}
             </span>
           </h1>
@@ -149,7 +153,7 @@ export function Home({ trips, onCreate, onDelete }: Props) {
         </form>
 
         <figure className="preview tilt" ref={previewRef}>
-          <Itinerary days={[addDays(preview.startDate, 1)]} activities={preview.activities} forecast={[]} unit="F" />
+          <Itinerary dayOffset={1} days={[addDays(preview.startDate, 1)]} activities={preview.activities} forecast={[]} unit="F" />
           <figcaption className="muted small">
             A Saturday from the sample trip, rendered by the real planner.
           </figcaption>

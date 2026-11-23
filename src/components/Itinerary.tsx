@@ -10,6 +10,8 @@ import { ActivityForm } from './ActivityForm';
 import { CategoryIcon, ICON_STROKE, WeatherIcon } from './icons';
 
 interface Props {
+  /** Number the first shown day as day `dayOffset + 1` (for previews of later days). */
+  dayOffset?: number;
   days: string[];
   activities: Activity[];
   forecast: DailyWeather[];
@@ -23,7 +25,7 @@ interface Props {
 
 type Editing = { mode: 'new'; date: string } | { mode: 'edit'; id: string } | null;
 
-export function Itinerary({ days, activities, forecast, unit, onChange, onFocus, highlightId }: Props) {
+export function Itinerary({ days, activities, forecast, unit, onChange, onFocus, highlightId , dayOffset = 0 }: Props) {
   const [editing, setEditing] = useState<Editing>(null);
   const [touchedId, setTouchedId] = useState<string | null>(null);
 
@@ -56,7 +58,7 @@ export function Itinerary({ days, activities, forecast, unit, onChange, onFocus,
           <section key={date} className="card day ticket" style={{ '--day-color': color } as React.CSSProperties}>
             <div className="stub" aria-hidden>
               <span className="stub-label">Day</span>
-              <span className="stub-num">{String(dayIndex + 1).padStart(2, '0')}</span>
+              <span className="stub-num">{String(dayIndex + 1 + dayOffset).padStart(2, '0')}</span>
               <span className="stub-label">{weekday.slice(0, 3)}</span>
             </div>
             <div className="day-body">
