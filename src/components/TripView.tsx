@@ -6,7 +6,11 @@ import { newId } from '../lib/storage';
 import { rescheduleTrip } from '../lib/trip';
 import { placeLabel } from '../lib/labels';
 import { describeWeather, formatTemp } from '../lib/weather';
-import { CalendarDays, Droplets, MapPin, Sunrise, Sunset, Users } from 'lucide-react';
+import { CalendarDays, Compass, Droplets, MapPin, Sunrise, Sunset, Users } from 'lucide-react';
+import { loadSuggestions } from '../lib/api';
+import { planWeekend, type PlacePool } from '../lib/planner';
+import { sampleSuggestions } from '../lib/sample';
+import { useToast } from './Toast';
 import type { Activity, Suggestion, Trip } from '../types';
 import { Budget } from './Budget';
 import { Itinerary } from './Itinerary';
@@ -33,7 +37,9 @@ export function TripView({ trip, onChange, actions }: Props) {
   const [focus, setFocus] = useState<{ lat: number; lon: number; key: number } | null>(null);
   const [targetDay, setTargetDay] = useState(days[0]);
   const [editingDates, setEditingDates] = useState(false);
-  const [highlightId, setHighlightId] = useState<string | null>(null);
+  const [highlightIds, setHighlightIds] = useState<string[]>([]);
+  const [planning, setPlanning] = useState(false);
+  const toast = useToast();
   const { ref: weatherRef } = useOffscreenPause<HTMLElement>();
 
   // Delayed callbacks (e.g. Undo in a toast) must apply to the latest trip, not the one they closed over.
@@ -58,10 +64,47 @@ export function TripView({ trip, onChange, actions }: Props) {
       location: { lat: s.lat, lon: s.lon },
     };
     update({ activities: [...trip.activities, activity] });
-    setHighlightId(activity.id);
+    setHighlightIds([activity.id]);
   };
 
-  const addedTitles = useMemo(() => new Set(trip.activities.map((a) => a.title.toLowerCase())), [trip.activities]);
+  const planMyWeekend = async () => {
+    setPlanning(true);
+    try {
+      const cats = ['sight', 'outdoors', 'food'] as const;
+      const results = await Promise.allSettled(
+        cats.map((c) => loadSuggestions(c, trip.destination, { fallback: sampleSuggestions(c, trip.destination) })),
+      );
+      const pool = Object.fromEntries(
+        cats.map((c, i) => [c, results[i].status === 'fulfilled' ? results[i].value : []]),
+      ) as PlacePool;
+      if (cats.every((c) => pool[c].length === 0)) {
+        toast("Couldn't reach OpenStreetMap — try again in a minute");
+        return;
+      }
+      const plan = planWeekend({ days, forecast, pool, existing: latest.current.activities });
+      if (plan.length === 0) {
+        toast('Your weekend is already full');
+        return;
+      }
+      const ids = plan.map((a) => a.id);
+      update((t) => ({ activities: [...t.activities, ...plan] }));
+      setHighlightIds(ids);
+      toast(`Added ${plan.length} stops`, {
+        action: {
+          label: 'Undo',
+          run: () => update((t) => ({ activities: t.activities.filter((a) => !ids.includes(a.id)) })),
+        },
+      });
+    } finally {
+      setPlanning(false);
+    }
+  };
+
+  // Planner meals are titled "Lunch at X" / "Dinner at X"; count X as added too.
+  const addedTitles = useMemo(
+    () => new Set(trip.activities.map((a) => a.title.toLowerCase().replace(/^(lunch|dinner) at /, ''))),
+    [trip.activities],
+  );
   const until = daysUntil(trip.startDate);
 
   return (
@@ -192,8 +235,21 @@ export function TripView({ trip, onChange, actions }: Props) {
 
       <div className="trip-grid-layout">
         <div className="col-main">
+          {onChange && (
+            <div className="plan-bar">
+              <button
+                className={`btn primary plan-btn${planning ? ' is-planning' : ''}`}
+                onClick={planMyWeekend}
+                disabled={planning}
+              >
+                <Compass size={18} strokeWidth={2} aria-hidden className="plan-icon" />
+                {planning ? 'Planning…' : 'Plan my weekend'}
+              </button>
+              <p className="muted small">Fills open time slots with nearby places — indoor picks on rainy days.</p>
+            </div>
+          )}
           <Itinerary
-            highlightId={highlightId}
+            highlightIds={highlightIds}
             days={days}
             activities={trip.activities}
             forecast={forecast}

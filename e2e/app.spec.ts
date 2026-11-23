@@ -13,6 +13,24 @@ test('creates a trip from a destination search', async ({ page }) => {
   await expect(page.getByText('Nothing planned yet.').first()).toBeVisible();
 });
 
+test('plans a weekend automatically, with undo', async ({ page }) => {
+  await page.goto('./');
+  await page.getByRole('combobox').fill('Ashe');
+  await page.getByRole('option', { name: /Asheville/ }).click();
+  await page.getByRole('button', { name: 'Start planning' }).click();
+  await expect(page.locator('.activity')).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'Plan my weekend' }).click();
+  await expect(page.getByRole('status')).toContainText(/Added \d+ stops/);
+  const count = await page.locator('.activity').count();
+  expect(count).toBeGreaterThanOrEqual(6);
+  await expect(page.locator('.day').first().getByText('2:30 PM')).toBeVisible();
+  await expect(page.getByText(/Dinner at /).first()).toBeVisible();
+
+  await page.getByRole('status').getByRole('button', { name: 'Undo' }).click();
+  await expect(page.locator('.activity')).toHaveCount(0);
+});
+
 test.describe('sample trip', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('./');

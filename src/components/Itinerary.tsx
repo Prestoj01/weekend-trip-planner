@@ -24,8 +24,8 @@ interface Props {
   onFocus?: (a: Activity) => void;
   /** Put a removed activity back (Undo). */
   onRestore?: (a: Activity) => void;
-  /** An activity added elsewhere (e.g. from suggestions) to flash once. */
-  highlightId?: string | null;
+  /** Activities added elsewhere (suggestions, the planner) to drop in, staggered in this order. */
+  highlightIds?: string[];
 }
 
 type Editing = { mode: 'new'; date: string } | { mode: 'edit'; id: string } | null;
@@ -37,7 +37,7 @@ export function Itinerary({
   unit,
   onChange,
   onFocus,
-  highlightId,
+  highlightIds = [],
   onRestore,
   dayOffset = 0,
 }: Props) {
@@ -136,7 +136,16 @@ export function Itinerary({
                   return (
                     <Fragment key={a.id}>
                       {legRow}
-                      <li className={a.id === touchedId || a.id === highlightId ? 'activity just-changed' : 'activity'}>
+                      <li
+                        className={
+                          a.id === touchedId || highlightIds.includes(a.id) ? 'activity just-changed' : 'activity'
+                        }
+                        style={
+                          highlightIds.includes(a.id)
+                            ? { animationDelay: `${highlightIds.indexOf(a.id) * 110}ms` }
+                            : undefined
+                        }
+                      >
                         <span className="activity-time">{a.time && formatTime(a.time)}</span>
                         <div className="activity-body">
                           <div className="activity-title">
