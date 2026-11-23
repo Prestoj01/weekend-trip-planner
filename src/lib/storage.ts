@@ -66,6 +66,12 @@ export function encodeTrip(trip: Trip): string {
 
 export function decodeTrip(data: string): Trip | null {
   try {
+    if (data.startsWith('2.')) {
+      const json = decompressFromEncodedURIComponent(data.slice(2));
+      if (!json) return null;
+      const trip = unpackTrip(JSON.parse(json) as Packed);
+      return isTrip(trip) ? trip : null;
+    }
     const json = decompressFromEncodedURIComponent(data);
     if (!json) return null;
     const parsed: unknown = JSON.parse(json);
@@ -73,4 +79,69 @@ export function decodeTrip(data: string): Trip | null {
   } catch {
     return null;
   }
+}
+
+const CATS = ['sight', 'outdoors', 'food', 'other'] as const;
+const round4 = (n: number) => Math.round(n * 1e4) / 1e4;
+
+/**
+ * Compact link format for space-limited places like QR codes: positional arrays instead of keyed
+ * objects, coordinates rounded to ~10 m, no packing list or notes. Prefixed with "2." so
+ * `decodeTrip` can tell it apart from the full format.
+ */
+export function encodeTripCompact(trip: Trip): string {
+  const days = trip.startDate;
+  const dayIndex = (d: string) => Math.round((Date.parse(d) - Date.parse(days)) / 86_400_000);
+  const packed = [
+    trip.name,
+    [
+      trip.destination.name,
+      round4(trip.destination.lat),
+      round4(trip.destination.lon),
+      trip.destination.region ?? '',
+      trip.destination.country ?? '',
+    ],
+    trip.startDate,
+    trip.endDate,
+    trip.travelers,
+    trip.activities.map((a) => [
+      dayIndex(a.date),
+      a.time ?? '',
+      a.title,
+      CATS.indexOf(a.category),
+      a.cost ?? 0,
+      ...(a.location ? [round4(a.location.lat), round4(a.location.lon)] : []),
+    ]),
+  ];
+  return `2.${compressToEncodedURIComponent(JSON.stringify(packed))}`;
+}
+
+type Packed = [string, [string, number, number, string, string], string, string, number, (string | number)[][]];
+
+function unpackTrip(p: Packed): Trip {
+  const [name, [dName, lat, lon, region, country], startDate, endDate, travelers, acts] = p;
+  const dateAt = (i: number) => {
+    const d = new Date(Date.parse(startDate) + i * 86_400_000);
+    return d.toISOString().slice(0, 10);
+  };
+  return {
+    id: newId(),
+    name,
+    destination: { name: dName, lat, lon, region: region || undefined, country: country || undefined },
+    startDate,
+    endDate,
+    travelers,
+    packing: [],
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+    activities: acts.map(([day, time, title, cat, cost, aLat, aLon]) => ({
+      id: newId(),
+      date: dateAt(Number(day)),
+      time: (time as string) || undefined,
+      title: String(title),
+      category: CATS[Number(cat)] ?? 'other',
+      cost: Number(cost) || undefined,
+      location: aLat !== undefined ? { lat: Number(aLat), lon: Number(aLon) } : undefined,
+    })),
+  };
 }

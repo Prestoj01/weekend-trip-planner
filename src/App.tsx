@@ -130,6 +130,28 @@ function TripActions({ trip, onToast, onDelete }: { trip: Trip; onToast: (m: str
     }
   };
 
+  const downloadTicket = async () => {
+    onToast('Printing your ticket…');
+    const { renderTicket } = await import('./lib/ticketImage');
+    const blob = await renderTicket(trip);
+    const file = new File([blob], `${slug}-ticket.png`, { type: 'image/png' });
+    if (navigator.canShare?.({ files: [file] }) && matchMedia('(pointer: coarse)').matches) {
+      try {
+        await navigator.share({ files: [file], title: trip.name });
+        return;
+      } catch {
+        // Share sheet dismissed; fall back to a download.
+      }
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = file.name;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    onToast('Ticket downloaded');
+  };
+
   const slug =
     trip.name
       .toLowerCase()
@@ -150,6 +172,9 @@ function TripActions({ trip, onToast, onDelete }: { trip: Trip; onToast: (m: str
         title="Download a calendar file for Google, Apple or Outlook Calendar"
       >
         Add to calendar
+      </button>
+      <button className="btn ghost small" onClick={downloadTicket} title="A shareable ticket image with a QR code">
+        Ticket image
       </button>
       <button className="btn ghost small" onClick={() => window.print()}>
         Print

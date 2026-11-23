@@ -85,6 +85,31 @@ test.describe('sample trip', () => {
     await expect(saturday.locator('.activity').first()).toContainText('9:00 AM');
   });
 
+  test('downloads a ticket image with a QR code', async ({ page }, info) => {
+    test.skip(info.project.name !== 'desktop', 'download flow');
+    const download = page.waitForEvent('download');
+    await page.getByRole('button', { name: 'Ticket image' }).click();
+    const file = await download;
+    expect(file.suggestedFilename()).toBe('blue-ridge-getaway-ticket.png');
+    const path = await file.path();
+    const fs = await import('node:fs');
+    const png = fs.readFileSync(path);
+    expect(png.subarray(1, 4).toString()).toBe('PNG');
+    expect(png.readUInt32BE(16)).toBe(1080); // width
+    expect(png.readUInt32BE(20)).toBe(1350); // height
+    if (process.env.SHOTS_DIR) fs.copyFileSync(path, `${process.env.SHOTS_DIR}/ticket.png`);
+
+    // The QR code must actually scan, and open the trip.
+    const { PNG } = await import('pngjs');
+    const jsQR = (await import('jsqr')).default;
+    const img = PNG.sync.read(png);
+    const code = jsQR(new Uint8ClampedArray(img.data), img.width, img.height);
+    expect(code?.data).toContain('#/share/');
+    await page.goto(code!.data);
+    await expect(page.getByRole('heading', { name: 'Blue Ridge Getaway' })).toBeVisible();
+    await expect(page.getByText('Biltmore Estate').first()).toBeVisible();
+  });
+
   test('deleting an activity can be undone', async ({ page }) => {
     const friday = page.locator('.day').first();
     await friday.getByRole('button', { name: 'Edit Check in downtown' }).click();
